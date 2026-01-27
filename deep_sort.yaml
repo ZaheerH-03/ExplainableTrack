@@ -1,0 +1,9 @@
+tracker_type: deepsort
+
+max_age: 40
+n_init: 3
+max_iou_distance: 0.7
+
+embedding:
+  model: mobilenet
+  device: cuda

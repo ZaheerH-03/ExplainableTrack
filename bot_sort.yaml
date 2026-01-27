@@ -1,0 +1,19 @@
+# Ultralytics BoT-SORT Tracker Configuration
+tracker_type: botsort  # Tracker backend: botsort|bytetrack
+
+# --- Tracking Thresholds ---
+track_high_thresh: 0.65  # First-stage match threshold; raise for cleaner tracks, lower to keep more
+track_low_thresh: 0.1  # Second-stage threshold for low-score matches; balances recovery vs drift
+new_track_thresh: 0.6  # Start a new track if no match ≥ this; higher reduces false tracks
+track_buffer: 200  # Frames to keep lost tracks alive; higher handles occlusion, increases ID switches risk
+match_thresh: 0.85  # Association similarity threshold (IoU/cost); tune with detector quality
+fuse_score: true  # Fuse detection score with motion/IoU for matching; stabilizes weak detections
+
+# --- BoT-SORT Specifics ---
+gmc_method: sparseOptFlow  # Global motion compensation: sparseOptFlow|orb|ecc|sift|none
+proximity_thresh: 0.5  # Min IoU to consider tracks proximate for ReID; higher is stricter
+appearance_thresh: 0.6  # Min appearance similarity for ReID; raise to avoid identity swaps
+
+# --- ReID Configuration ---
+with_reid: true  # Enable ReID model use; needs extra model and compute
+model: auto  # ReID model name/path; "auto" uses detector features if available
