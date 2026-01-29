@@ -52,9 +52,20 @@ opt.fps = 30
 tracker = BoTSORT(opt, frame_rate = opt.fps)
 tracker_timer = Timer()
 frame_timer = Timer()
-
+# COCO Class Names
+COCO_CLASSES = [
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+    "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+    "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+    "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
+    "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
+    "hair drier", "toothbrush"
+]
 # cap = cv2.VideoCapture(0)
-cap = cv2.VideoCapture(str(PROJECT_ROOT / "input3.mp4"))
+cap = cv2.VideoCapture(str(PROJECT_ROOT / "media/input3.mp4"))
 assert cap.isOpened()
 
 frame_id = 0
@@ -95,9 +106,18 @@ with torch.no_grad():
                 continue
 
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            
+            # Get class name
+            try:
+                # Use t.cls (BoT-SORT track class)
+                cls_id = int(t.cls) if hasattr(t, 'cls') else 0
+                cls_name = COCO_CLASSES[cls_id] if 0 <= cls_id < len(COCO_CLASSES) else str(cls_id)
+            except Exception:
+                cls_name = "Unknown"
+
             cv2.putText(
                 frame,
-                f"ID {tid}|Class {cls}",
+                f"ID {tid} | {cls_name}",
                 (x1, y1 - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.8,

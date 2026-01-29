@@ -58,6 +58,19 @@ opt.cmc_method = "sparseOptFlow"
 opt.device = "cuda" if torch.cuda.is_available() else "cpu"
 opt.fps = 30
 
+# COCO Class Names
+COCO_CLASSES = [
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+    "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+    "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+    "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
+    "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
+    "hair drier", "toothbrush"
+]
+
 def load_rtdetr_model(config_path, resume_path, device):
     cfg = YAMLConfig(str(config_path), resume=str(resume_path))
     
@@ -101,7 +114,7 @@ def main():
     frame_timer = Timer()
 
     # cap = cv2.VideoCapture(0)
-    cap = cv2.VideoCapture("/media/aid-pc/My1TB/Zaheer/botsort/input3.mp4")
+    cap = cv2.VideoCapture("/media/aid-pc/My1TB/Zaheer/botsort/media/input3.mp4")
     
     transforms = T.Compose([
         T.Resize((640, 640)), # Adjust based on config if needed
@@ -166,7 +179,17 @@ def main():
                 
                 # Draw
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, f"ID {tid}", (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                
+                # Get class name
+                try:
+                    # Assuming BoT-SORT STrack object has 'cls' attribute for class ID
+                    cls_id = int(t.cls) if hasattr(t, 'cls') else 0
+                    cls_name = COCO_CLASSES[cls_id] if 0 <= cls_id < len(COCO_CLASSES) else str(cls_id)
+                except Exception:
+                    cls_name = "Unknown"
+
+                label_text = f"ID {tid} | {cls_name}"
+                cv2.putText(frame, label_text, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
             cv2.imshow('RT-DETRv4 Tracking', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
