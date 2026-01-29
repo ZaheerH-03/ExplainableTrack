@@ -1,4 +1,4 @@
-# BoT-SORT-XAI: Explainable Multi-Object Tracking
+# ExplainableTrack: Explainable Multi-Object Tracking
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-1.9+-ee4c2c.svg)](https://pytorch.org/)
