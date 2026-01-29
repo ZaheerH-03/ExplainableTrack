@@ -20,8 +20,10 @@ if not RT_DETR_ROOT.exists():
     sys.exit(1)
 
 # Import RT-DETRv4 modules (PYTHONPATH handled by run.sh)
+sys.path.append(str(RT_DETR_ROOT))
 from engine.core import YAMLConfig
 
+sys.path.append(str(PROJECT_ROOT / "BoT-SORT"))
 from tracker.mc_bot_sort import BoTSORT
 from tracker.tracking_utils.timer import Timer
 
@@ -48,8 +50,8 @@ opt.aspect_ratio_thresh = 1.6
 opt.min_box_area = 10
 opt.mot20 = False
 opt.with_reid = True
-opt.fast_reid_config = "/media/aid-pc/My1TB/Zaheer/botsort/BoT-SORT/fast_reid/configs/MOT17/sbs_S50.yml"
-opt.fast_reid_weights = "/media/aid-pc/My1TB/Zaheer/botsort/weights/mot17_sbs_S50.pth"
+opt.fast_reid_config = str(PROJECT_ROOT / "BoT-SORT/fast_reid/configs/MOT17/sbs_S50.yml")
+opt.fast_reid_weights = str(PROJECT_ROOT / "weights/mot17_sbs_S50.pth")
 opt.proximity_thresh = 2.0
 opt.appearance_thresh = 0.45
 opt.cmc_method = "sparseOptFlow"

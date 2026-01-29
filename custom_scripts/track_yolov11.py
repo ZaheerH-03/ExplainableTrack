@@ -3,6 +3,7 @@ from pathlib import Path
 
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.append(str(PROJECT_ROOT / "BoT-SORT"))
 
 import cv2
 import numpy as np
@@ -40,8 +41,8 @@ opt.mot20 = False
 
 opt.with_reid = True
 # Clean paths using PROJECT_ROOT
-opt.fast_reid_config = PROJECT_ROOT / "BoT-SORT/fast_reid/configs/MOT17/sbs_S50.yml"
-opt.fast_reid_weights = PROJECT_ROOT / "weights/mot17_sbs_S50.pth"
+opt.fast_reid_config = str(PROJECT_ROOT / "BoT-SORT/fast_reid/configs/MOT17/sbs_S50.yml")
+opt.fast_reid_weights = str(PROJECT_ROOT / "weights/mot17_sbs_S50.pth")
 opt.proximity_thresh = 2.0
 opt.appearance_thresh = 0.45
 opt.cmc_method = "sparseOptFlow"
@@ -52,8 +53,8 @@ tracker = BoTSORT(opt, frame_rate = opt.fps)
 tracker_timer = Timer()
 frame_timer = Timer()
 
-cap = cv2.VideoCapture(0)
-# cap = cv2.VideoCapture(str(PROJECT_ROOT / "input3.mp4"))
+# cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(str(PROJECT_ROOT / "input3.mp4"))
 assert cap.isOpened()
 
 frame_id = 0
