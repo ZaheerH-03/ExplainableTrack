@@ -23,7 +23,7 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 ## 📁 Project Structure
 
 ```text
-├── BoT-SORT               # Original BoT-SORT repository as a submodule/dependency
+├── BoT-SORT               # Original BoT-SORT repository with patches and fixes as a submodule/dependency
 ├── RT-DETRv4-main         # RT-DETRv4 source code and utilities
 ├── botsort_scripts        # Main entry points for YOLOv11 and RT-DETR tracking
 │   ├── track_yolov11.py   # Tracker using YOLOv11
@@ -127,7 +127,10 @@ LIME and Eigen-CAM provide intuitive heatmaps, helping researchers identify if m
 
 ---
 
+Will Soon be updated with a RT-DETRv4 repo and also a RTDETRv4 custom repo with required changes needed to run on 
+personal datasets with and without teacher model.
 
+---
 ## 📜 License
 
 This project is licensed under the MIT License - see the `LICENSE` file for details.
