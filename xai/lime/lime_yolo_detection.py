@@ -1,3 +1,17 @@
+"""
+LIME Explanation for YOLO Object Detection
+
+This script produces Local Interpretable Model-agnostic Explanations (LIME) for YOLO 
+object detection predictions. It perturbs the image (superpixels) and observes 
+how the detection confidence changes to identify which regions are most important 
+for a specific detection.
+
+Key Concepts:
+- **LIME Image Explainer**: Generates perturbed samples by masking superpixels.
+- **Predict Function**: Custom wrapper that feeds perturbed images to YOLO and checks if the original object is still detected.
+- **Visualization**: Shows the original detection, LIME superpixel boundaries, and a heatmap of importance.
+"""
+
 import numpy as np
 import cv2
 from lime import lime_image
@@ -5,7 +19,7 @@ from skimage.segmentation import mark_boundaries
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
 
-# COCO class names
+# COCO class names matching the YOLO trained classes
 COCO_CLASSES = [
     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
@@ -27,30 +41,33 @@ def lime_explain_detection(
     output_path='lime_explanation.jpg'
 ):
     """
-    Explain a YOLO detection using LIME.
+    Explain a specific YOLO detection using LIME.
     
     Args:
-        image_path: Path to input image
-        model_path: Path to YOLO model weights
-        target_box_idx: Which detected box to explain (0 = highest confidence)
-        num_samples: Number of perturbed samples for LIME (higher = better but slower)
-        num_features: Number of superpixels to highlight
-        output_path: Where to save the explanation
+        image_path (str): Path to input image.
+        model_path (str): Path to YOLO `.pt` model weights.
+        target_box_idx (int): Index of the detection to explain (sorted by confidence).
+                               0 = highest confidence.
+        num_samples (int): Number of perturbed image samples to generate. 
+                           Higher values = more stable explanations but slower.
+        num_features (int): Number of top superpixels (regions) to highlight in visualization.
+        output_path (str): File path to save the resulting visualization.
     """
     
-    # Load model
+    # 1. Load model
     print(f"Loading model from {model_path}...")
     model = YOLO(model_path)
     
-    # Load and prepare image
+    # 2. Load and prepare image
     print(f"Loading image from {image_path}...")
     img_bgr = cv2.imread(image_path)
     if img_bgr is None:
         raise FileNotFoundError(f"Could not find image at {image_path}")
     
+    # LIME expects RGB
     image_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     
-    # Run initial detection to find target box
+    # 3. Run initial detection to find target
     print("Running initial detection...")
     results = model.predict(image_rgb, conf=0.25, verbose=False)[0]
     
@@ -58,13 +75,14 @@ def lime_explain_detection(
         print("No objects detected!")
         return
     
-    # Sort by confidence and select target
+    # Sort detections by confidence to make indexing valid
     boxes = results.boxes.xyxy.cpu().numpy()
     scores = results.boxes.conf.cpu().numpy()
     classes = results.boxes.cls.cpu().numpy()
     
     sorted_idx = np.argsort(scores)[::-1]
     
+    # Handle index out of bounds
     if target_box_idx >= len(sorted_idx):
         print(f"Warning: Only {len(sorted_idx)} boxes detected, using box 0")
         target_box_idx = 0
@@ -81,7 +99,7 @@ def lime_explain_detection(
     print(f"  Confidence: {target_score:.3f}")
     print(f"  Box: [{target_box[0]:.0f}, {target_box[1]:.0f}, {target_box[2]:.0f}, {target_box[3]:.0f}]")
     
-    # Calculate IoU between a box and target box
+    # Helper: Calculate IoU to match perturbations to original box
     def calculate_iou(box1, box2):
         x1 = max(box1[0], box2[0])
         y1 = max(box1[1], box2[1])
@@ -95,43 +113,54 @@ def lime_explain_detection(
         
         return intersection / union if union > 0 else 0
     
-    # Prediction function for LIME
+    # 4. Define Prediction function for LIME
+    # The Black Box: LIME gives us images, we return detection probabilities
     def predict_fn(images):
         """
-        For each perturbed image, return a score indicating how well
-        the target object is still detected.
+        Custom prediction callback for LIME.
+        
+        Args:
+            images (list or np.ndarray): Batch of perturbed images.
+            
+        Returns:
+            probs (np.ndarray): Array of shape (N, 2) where the first column is 
+                                the score of the target class in the target box.
         """
         results_list = []
         
         for img in images:
-            # Run detection on perturbed image
+            # Run detection on perturbed image with low confidence threshold
+            # to catch weak detections caused by occlusion (superpixels off)
             res = model.predict(img, conf=0.1, verbose=False)[0]
             
             if len(res.boxes) == 0:
-                # No detection = 0 probability
+                # No detection found -> probability 0 for target
                 results_list.append([0.0, 1.0])  # [target_prob, background_prob]
                 continue
             
-            # Find best matching box (highest IoU with target)
+            # Find best detection matching the original target box
             pred_boxes = res.boxes.xyxy.cpu().numpy()
             pred_classes = res.boxes.cls.cpu().numpy()
             pred_scores = res.boxes.conf.cpu().numpy()
             
             best_score = 0.0
+            
             for i, (box, cls, score) in enumerate(zip(pred_boxes, pred_classes, pred_scores)):
-                # Only consider boxes of the same class
+                # Must check Class consistency
                 if int(cls) == target_class:
                     iou = calculate_iou(box, target_box)
-                    # Score is combination of IoU and confidence
+                    
+                    # We weight the score by IoU to ensure we are tracking the *same* object
+                    # in the *same* location.
                     combined_score = iou * score
                     best_score = max(best_score, combined_score)
             
-            # Return as probability distribution [target, background]
+            # Return pseudo-probability distribution [target_score, inverse]
             results_list.append([best_score, 1.0 - best_score])
         
         return np.array(results_list)
     
-    # Run LIME explanation
+    # 5. Run LIME explanation
     print(f"\nGenerating LIME explanation with {num_samples} samples...")
     print("This may take a few minutes...")
     
@@ -139,27 +168,27 @@ def lime_explain_detection(
     explanation = explainer.explain_instance(
         image_rgb,
         predict_fn,
-        top_labels=2,
-        hide_color=0,
+        top_labels=2,    # We only care about target vs background
+        hide_color=0,    # Fill occluded superpixels with black
         num_samples=num_samples,
-        batch_size=10  # Process in batches for efficiency
+        batch_size=10    # Process perturbations in batches
     )
     
-    # Visualize explanation
+    # 6. Visualize explanation
     print("Creating visualization...")
     
-    # Get the explanation for the target class (label 0 = target present)
+    # Get the explanation overlay (label 0 = our target presence)
     temp, mask = explanation.get_image_and_mask(
-        0,  # Label 0 represents "target detected"
+        0,  
         positive_only=True,
         num_features=num_features,
         hide_rest=False
     )
     
-    # Create figure with multiple views
+    # Setup PyPlot figure
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     
-    # Original image with detection
+    # View 1: Original Detection
     axes[0].imshow(image_rgb)
     x1, y1, x2, y2 = target_box
     rect = plt.Rectangle((x1, y1), x2-x1, y2-y1, fill=False, color='red', linewidth=3)
@@ -170,25 +199,24 @@ def lime_explain_detection(
     axes[0].set_title('Original Detection', fontsize=14, weight='bold')
     axes[0].axis('off')
     
-    # LIME explanation overlay
+    # View 2: LIME Superpixel Overlay
     axes[1].imshow(mark_boundaries(temp, mask))
     axes[1].set_title(f'LIME Explanation\n(Top {num_features} influential regions)', 
                      fontsize=14, weight='bold')
     axes[1].axis('off')
     
-    # Heatmap view
+    # View 3: Importance Heatmap
     from skimage.color import gray2rgb
-    # Get weights for all superpixels
     segments = explanation.segments
     weights = np.zeros(image_rgb.shape[:2])
     
-    # Get feature weights
+    # Map weights to superpixels
     explanation_map = dict(explanation.local_exp[0])
     for segment_id, weight in explanation_map.items():
         if weight > 0:  # Only positive contributions
             weights[segments == segment_id] = weight
     
-    # Normalize and create heatmap
+    # Normalize heatmap
     if weights.max() > 0:
         weights = weights / weights.max()
     
@@ -202,9 +230,9 @@ def lime_explain_detection(
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     print(f"\nExplanation saved to: {output_path}")
     
-    plt.show()
+    plt.show() # Display interactively if possible
     
-    # Print feature importance
+    # Print numerical feature importance
     print("\nTop contributing regions (superpixel weights):")
     sorted_features = sorted(explanation.local_exp[0], key=lambda x: abs(x[1]), reverse=True)
     for i, (feature, weight) in enumerate(sorted_features[:10]):
@@ -221,3 +249,4 @@ if __name__ == "__main__":
         num_features=20,    # Number of superpixels to highlight
         output_path="media/lime_detection_explanation.jpg"
     )
+

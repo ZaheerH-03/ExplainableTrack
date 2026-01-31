@@ -1,18 +1,31 @@
+"""
+YOLOv11 Tracking Script
+
+This script utilizes the YOLOv11 object detection model combined with the BoT-SORT tracker
+to perform real-time multiple object tracking on video inputs.
+
+Key Functions:
+- Loads YOLOv11 model.
+- Processes video frames.
+- Detects objects and passes them to the tracker.
+- Visualizes tracking output.
+"""
+
 import sys
 from pathlib import Path
-
-# Paths
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(PROJECT_ROOT / "BoT-SORT"))
-
 import cv2
 import numpy as np
 import torch
 from ultralytics import YOLO
+
+# --- Path Setup ---
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.append(str(PROJECT_ROOT / "BoT-SORT"))
+
 from tracker.mc_bot_sort import BoTSORT
 from tracker.tracking_utils.timer import Timer
 
-# YOLOv11 Model
+# --- YOLOv11 Model Initialization ---
 # Assuming weights are in the standard weights directory relative to project root
 model_path = PROJECT_ROOT / "weights/yolo11m.pt"
 if not model_path.exists():
@@ -25,8 +38,12 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 yolo.to(device)
 
 class Opt:
+    """
+    Configuration class for BoT-SORT options.
+    """
     pass
 
+# --- Tracker Configuration ---
 opt = Opt()
 opt.name = "yolov11"
 opt.ablation = False
@@ -39,6 +56,7 @@ opt.aspect_ratio_thresh = 1.6
 opt.min_box_area = 10
 opt.mot20 = False
 
+# ReID (Re-Identification) settings
 opt.with_reid = True
 # Clean paths using PROJECT_ROOT
 opt.fast_reid_config = str(PROJECT_ROOT / "BoT-SORT/fast_reid/configs/MOT17/sbs_S50.yml")
@@ -49,10 +67,12 @@ opt.cmc_method = "sparseOptFlow"
 opt.device = device
 opt.fps = 30
 
+# Initialize Tracker
 tracker = BoTSORT(opt, frame_rate = opt.fps)
 tracker_timer = Timer()
 frame_timer = Timer()
-# COCO Class Names
+
+# COCO Class Names for display
 COCO_CLASSES = [
     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
@@ -64,9 +84,11 @@ COCO_CLASSES = [
     "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
     "hair drier", "toothbrush"
 ]
-# cap = cv2.VideoCapture(0)
+
+# --- Main Processing Loop ---
+# cap = cv2.VideoCapture(0) # Use 0 for webcam
 cap = cv2.VideoCapture(str(PROJECT_ROOT / "media/input3.mp4"))
-assert cap.isOpened()
+assert cap.isOpened(), "Error opening video stream or file"
 
 frame_id = 0
 with torch.no_grad():
@@ -77,9 +99,11 @@ with torch.no_grad():
 
         frame_timer.tic()
 
+        # Run YOLO inference
         results = yolo(frame, conf=0.25, iou=0.7, device=device)[0]
         detections = []
 
+        # Parse results
         if results.boxes is not None:
             boxes = results.boxes.xyxy.cpu().numpy()
             scores = results.boxes.conf.cpu().numpy()
@@ -89,22 +113,27 @@ with torch.no_grad():
                 x1, y1, x2, y2 = box
                 detections.append([x1, y1, x2, y2, score, cls])
 
+        # Prepare detections for BoT-SORT
         if len(detections) == 0:
             detections = np.empty((0, 6), dtype=np.float32)
         else:
             detections = np.asarray(detections, dtype=np.float32)
 
+        # Update Tracker
         tracker_timer.tic()
         online_targets = tracker.update(detections, frame)
         tracker_timer.toc()
 
+        # Visualize Tracks
         for t in online_targets:
             x1, y1, x2, y2 = map(int, t.tlbr)
             tid = t.track_id
 
+            # Filter small boxes
             if (x2 - x1) * (y2 - y1) < opt.min_box_area:
                 continue
 
+            # Draw bounding box
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             
             # Get class name
@@ -115,6 +144,7 @@ with torch.no_grad():
             except Exception:
                 cls_name = "Unknown"
 
+            # Draw label
             cv2.putText(
                 frame,
                 f"ID {tid} | {cls_name}",
@@ -135,3 +165,4 @@ cap.release()
 cv2.destroyAllWindows()
 print("Avg FPS:",1.0/frame_timer.average_time)
 print("Tracker FPS:",1.0/tracker_timer.average_time)
+

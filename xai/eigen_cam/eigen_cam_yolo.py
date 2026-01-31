@@ -1,3 +1,15 @@
+"""
+EigenCAM Visualization for YOLOv11
+
+This script computes and visualizes EigenCAM heatmaps for YOLO models. It allows 
+interpreting which regions of the image contribute most to the model's feature representations.
+
+Features:
+- Custom YOLO wrapper for feature extraction hooks.
+- Layer selection suggestions to avoid incompatible Detect layers.
+- Supports visualizing feature maps from backbone and neck layers.
+"""
+
 import cv2
 import numpy as np
 import torch
@@ -11,7 +23,12 @@ from ultralytics import YOLO
 class YOLOWrapper(torch.nn.Module):
     """
     Wrapper for YOLO model to make it compatible with pytorch-grad-cam.
-    Uses feature hooks to extract intermediate layer outputs.
+    
+    Problem: Standard YOLO forward pass returns predictions (boxes, scores).
+    EigenCAM needs access to intermediate 4D feature maps (B, C, H, W).
+    
+    Solution: This wrapper registers a forward hook on the target layer to intercept 
+    the feature maps during interference and return them instead of the final predictions.
     """
     def __init__(self, yolo_model, target_layer):
         super(YOLOWrapper, self).__init__()
@@ -83,7 +100,9 @@ def generate_eigencam_visualization(
         model_path: Path to YOLO weights
         image_path: Path to input image
         output_path: Path to save the visualization
-        target_layer_idx: Index of target layer (default: -2, second to last layer)
+        target_layer_idx: Index of target layer (default: -2). 
+                          Negative indices count from the end.
+                          NOTE: Avoid the final 'Detect' layer.
     """
     
     # Check if image exists
@@ -127,7 +146,7 @@ def generate_eigencam_visualization(
     if img is None:
         raise ValueError(f"Failed to load image: {image_path}")
     
-    # Resize to model input size
+    # Resize to model input size (standard YOLO size)
     img_resized = cv2.resize(img, (640, 640))
     
     # Convert to RGB (OpenCV loads as BGR)

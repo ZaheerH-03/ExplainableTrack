@@ -1,3 +1,17 @@
+"""
+EigenCAM Visualization for RT-DETR
+
+This script generates EigenCAM visualizations for the RT-DETR object detection model.
+EigenCAM (Eigen Class Activation Mapping) computes the principal components of the 
+feature maps from a target layer to visualize which parts of the image the model 
+features are focusing on, independent of specific class predictions.
+
+Key Features:
+- Custom wrapper for RT-DETR compatibility with pytorch-grad-cam.
+- Automatic target layer selection heuristics.
+- Generates heatmap overlays on input images.
+"""
+
 import sys
 import os
 import cv2
@@ -8,6 +22,7 @@ from pytorch_grad_cam import EigenCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from pathlib import Path
 
+# --- Path Setup ---
 # Add RT-DETR root to path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4-main"
@@ -26,6 +41,10 @@ except ImportError as e:
 class RTDETRWrapper(nn.Module):
     """
     Wrapper for RT-DETR model to make it compatible with pytorch-grad-cam.
+    
+    The library expects standard tensor outputs, but RT-DETR often returns 
+    dictionaries or tuples (logits, boxes). This wrapper extracts the 
+    logits (classification scores) to satisfy the library's expectations.
     """
     def __init__(self, model):
         super(RTDETRWrapper, self).__init__()
@@ -39,10 +58,11 @@ class RTDETRWrapper(nn.Module):
         try:
             outputs = self.model(x, orig_target_sizes)
         except Exception:
+            # Fallback for models not needing target sizes during inference
             outputs = self.model(x)
 
-        # PyTorch GradCAM expects a single tensor output (logits) to determine target categories
-        # RT-DETR returns (logits, boxes) or similar structure
+        # PyTorch GradCAM expects a single tensor output (logits) to determine target categories.
+        # RT-DETR returns (logits, boxes) or similar structure.
         if isinstance(outputs, (tuple, list)):
             # Usually the first element is logits [batch, queries, classes]
             return outputs[0]
@@ -53,9 +73,21 @@ class RTDETRWrapper(nn.Module):
         return outputs
 
 def load_model(config_path, weights_path, device='cuda'):
+    """
+    Load RT-DETR model from config and weights.
+    
+    Args:
+        config_path (Path): Path to YAML config.
+        weights_path (Path): Path to .pth weights file.
+        device (str): Computation device.
+        
+    Returns:
+        model (nn.Module): Loaded model in eval mode.
+    """
     print(f"Loading RT-DETR configuration from {config_path}")
     cfg = YAMLConfig(str(config_path), resume=str(weights_path))
     
+    # Disable pretrained backbone download/loading if not needed
     if 'HGNetv2' in cfg.yaml_cfg:
         cfg.yaml_cfg['HGNetv2']['pretrained'] = False
         
@@ -68,6 +100,7 @@ def load_model(config_path, weights_path, device='cuda'):
     cfg.model.load_state_dict(state)
     
     class Model(nn.Module):
+        """Inner wrapper to handle post-processing deployment mode."""
         def __init__(self):
             super().__init__()
             self.model = cfg.model.deploy()
@@ -85,12 +118,16 @@ def load_model(config_path, weights_path, device='cuda'):
 
 
 def print_model_layers(model):
+    """
+    Utility to inspect model layers for selecting target_layers.
+    """
     print("\nAvailable Model Layers:")
     print("-" * 80)
     rtdetr = model.model
     for name, module in rtdetr.named_modules():
         if isinstance(module, (nn.Conv2d, nn.BatchNorm2d, nn.Linear)):
             continue
+        # Filter for relevant high-level blocks
         if any(x in name for x in ['backbone', 'encoder', 'decoder', 'transformer', 'neck']):
             print(f"Layer: {name} | Type: {module.__class__.__name__}")     
     print("-" * 80)
@@ -103,6 +140,17 @@ def generate_eigencam_visualization(
     output_path='rtdetr_eigencam.jpg',
     target_layer_name='backbone'
 ):
+    """
+    Main function to generate and save EigenCAM visualization.
+    
+    Args:
+        config_path (Path): RT-DETR config file.
+        weights_path (Path): Trained weights file.
+        image_path (str): Input image path.
+        output_path (str): Output filename.
+        target_layer_name (str): Name of the layer to target (default: 'backbone').
+                                 The script uses heuristics to find the actual last feature layer.
+    """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     # 1. Load Model
@@ -112,7 +160,7 @@ def generate_eigencam_visualization(
     # 2. Identify Target Layer
     target_layer = None
     
-    # Try naive search first
+    # Try name-based search first
     found_layer = None
     for name, module in rtdetr_base.named_modules():
         if name == target_layer_name:
@@ -123,23 +171,22 @@ def generate_eigencam_visualization(
         print(f"Found layer '{target_layer_name}' ({found_layer.__class__.__name__}).")
         target_layer = found_layer
         
-        # Heuristic: If it's the backbone container, we need to dig deeper
-        # because the backbone container returns a list/tuple.
-        # We want the LAST computational block that returns a Tensor.
+        # Heuristic: If it's a container (like backbone), we need to drill down
+        # to the last computational block that output tensors.
         if len(list(target_layer.children())) > 0:
             print("Inspecting children to find suitable Tensor-outputting layer...")
             
-            # Check for 'body' (common in TIMM)
+            # Check for 'body' (common in TIMM backbones)
             if hasattr(target_layer, 'body'):
                 target_layer = target_layer.body
                 print(f"Decended into .body ({target_layer.__class__.__name__})")
-
+ 
             # If it's a ModuleList (like 'stages'), pick the last one
             if isinstance(target_layer, nn.ModuleList):
                 if len(target_layer) > 0:
                     target_layer = target_layer[-1]
                     print(f"Selected last item in ModuleList ({target_layer.__class__.__name__})")
-
+ 
             # Check for 'stages' child (common in HGNet)
             if hasattr(target_layer, 'stages'):
                 target_layer = target_layer.stages
@@ -147,33 +194,24 @@ def generate_eigencam_visualization(
                 if isinstance(target_layer, nn.ModuleList) and len(target_layer) > 0:
                     target_layer = target_layer[-1]
                     print(f"Selected last stage ({target_layer.__class__.__name__})")
-
-            # General fallback: if still a container with children, verify if it's the one we want
-            # If we are effectively at a Stage/Block (Sequential), that is usually fine.
-            # But if we are at a generic container that iterates and returns list, we must be careful.
-            
-            # Check if current target has children
+ 
+            # General fallback: drill down to the absolute last child
             children = list(target_layer.children())
             if len(children) > 0:
-                 # If it's likely a container of stages, take the last one
                  child_name = children[-1].__class__.__name__
                  print(f"Drilling down to last child: {child_name}")
                  target_layer = children[-1]
 
-    # Check fallbacks if specific targeting failed
-    if target_layer is None:
-        print(f"Layer '{target_layer_name}' not found exact match. Using heuristics...")
-        # (Existing fallbacks can be re-added if needed, but the drill-down above is robust)
-                     
     if target_layer is None:
         raise ValueError(f"Could not resolve target layer for '{target_layer_name}'")
         
     print(f"Final Target Layer: {target_layer.__class__.__name__}")
-
+ 
     # 3. Setup Wrapper (Model level)
     wrapped_model = RTDETRWrapper(model)
     
     # 4. Initialize EigenCAM
+    # passed as a list of layers
     cam = EigenCAM(model=wrapped_model, target_layers=[target_layer])
     
     # 5. Process Image
@@ -190,8 +228,10 @@ def generate_eigencam_visualization(
     
     # 6. Generate CAM
     print("Generating EigenCAM...")
+    # EigenCAM doesn't require specific targets, it operates on features
     grayscale_cam = cam(input_tensor=input_tensor, targets=None)[0, :]
     
+    # Overlay on original image
     visualization = show_cam_on_image(img_normalized, grayscale_cam, use_rgb=True)
     visualization_bgr = cv2.cvtColor(visualization, cv2.COLOR_RGB2BGR)
     
@@ -200,6 +240,7 @@ def generate_eigencam_visualization(
 
 
 if __name__ == "__main__":
+    # Example Paths - Adjust as needed
     PROJECT_ROOT_PATH = Path("/media/aid-pc/My1TB/Zaheer/botsort")
     WEIGHTS = PROJECT_ROOT_PATH / "weights/RTv4-L-hgnet.pth"
     RT_DETR_MAIN = PROJECT_ROOT_PATH / "RT-DETRv4-main"
@@ -233,3 +274,4 @@ if __name__ == "__main__":
         print(f"Context: {e}")
         import traceback
         traceback.print_exc()
+

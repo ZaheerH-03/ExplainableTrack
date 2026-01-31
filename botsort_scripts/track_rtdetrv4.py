@@ -1,3 +1,17 @@
+"""
+RT-DETRv4 Tracking Script
+
+This script demonstrates object tracking using the RT-DETRv4 object detection model 
+and BoT-SORT tracker. It processes video input, detects objects, tracks them across 
+frames, and visualizes the results with bounding boxes and unique IDs.
+
+Key Features:
+- Integates RT-DETRv4 for object detection.
+- Uses BoT-SORT for multi-object tracking.
+- Supports FastReID for re-identification features.
+- Visualizes tracking results in real-time.
+"""
+
 import sys
 import os
 import cv2
@@ -6,28 +20,27 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as T
 from PIL import Image
-
 from pathlib import Path
 
-# Paths
-# Paths
+# --- Path Setup ---
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# RT-DETRv4 Path
+# RT-DETRv4 Path Setup
 RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4-main"
 if not RT_DETR_ROOT.exists():
     print(f"Error: Could not find RT-DETRv4-main at {RT_DETR_ROOT}")
     sys.exit(1)
 
-# Import RT-DETRv4 modules (PYTHONPATH handled by run.sh)
+# Import RT-DETRv4 modules (adding to sys.path)
 sys.path.append(str(RT_DETR_ROOT))
 from engine.core import YAMLConfig
 
+# Import BoT-SORT modules
 sys.path.append(str(PROJECT_ROOT / "BoT-SORT"))
 from tracker.mc_bot_sort import BoTSORT
 from tracker.tracking_utils.timer import Timer
 
-# Configuration
+# --- Configuration & Constants ---
 WEIGHTS_PATH = PROJECT_ROOT / "weights/RTv4-L-hgnet.pth"
 CONFIG_PATH = RT_DETR_ROOT / "configs/rtv4/rtv4_hgnetv2_l_coco.yml"
 
@@ -36,29 +49,33 @@ if not WEIGHTS_PATH.exists():
     # sys.exit(1) # Warning only, let user fix
 
 class Opt:
+    """
+    Configuration class for BoT-SORT tracker settings.
+    Acts as a namespace for passing arguments to the tracker.
+    """
     pass
 
 opt = Opt()
 opt.name = "rtdetr_v4"
 opt.ablation = False
-opt.track_high_thresh = 0.5
-opt.track_low_thresh = 0.1
-opt.new_track_thresh = 0.6
-opt.track_buffer = 1200
-opt.match_thresh = 0.7
-opt.aspect_ratio_thresh = 1.6
-opt.min_box_area = 10
-opt.mot20 = False
-opt.with_reid = True
+opt.track_high_thresh = 0.5  # High detection threshold for tracking
+opt.track_low_thresh = 0.1   # Low detection threshold for tracking
+opt.new_track_thresh = 0.6   # Threshold for creating a new track
+opt.track_buffer = 1200      # Buffer size for tracking history
+opt.match_thresh = 0.7       # IoU matching threshold
+opt.aspect_ratio_thresh = 1.6 # Aspect ratio threshold for filtering
+opt.min_box_area = 10        # Minimum box area for valid detections
+opt.mot20 = False            # MOT20 dataset setting
+opt.with_reid = True         # Enable ReID module
 opt.fast_reid_config = str(PROJECT_ROOT / "BoT-SORT/fast_reid/configs/MOT17/sbs_S50.yml")
 opt.fast_reid_weights = str(PROJECT_ROOT / "weights/mot17_sbs_S50.pth")
-opt.proximity_thresh = 2.0
-opt.appearance_thresh = 0.45
-opt.cmc_method = "sparseOptFlow"
+opt.proximity_thresh = 2.0   # Proximity threshold for ReID
+opt.appearance_thresh = 0.45 # Appearance similarity threshold
+opt.cmc_method = "sparseOptFlow" # Camera motion compensation method
 opt.device = "cuda" if torch.cuda.is_available() else "cpu"
 opt.fps = 30
 
-# COCO Class Names
+# COCO Class Names for visualization
 COCO_CLASSES = [
     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
@@ -72,8 +89,20 @@ COCO_CLASSES = [
 ]
 
 def load_rtdetr_model(config_path, resume_path, device):
+    """
+    Loads the RT-DETR model from the specified configuration and checkpoint.
+
+    Args:
+        config_path (str or Path): Path to the YAML configuration file.
+        resume_path (str or Path): Path to the model checkpoint (.pth).
+        device (str): Device to load the model on ('cuda' or 'cpu').
+
+    Returns:
+        model (nn.Module): Loaded and ready-to-use RT-DETR model.
+    """
     cfg = YAMLConfig(str(config_path), resume=str(resume_path))
     
+    # Disable pretrained backbone if HGNetv2 is used (prevents unnecessary downloads/warnings if local)
     if 'HGNetv2' in cfg.yaml_cfg:
         cfg.yaml_cfg['HGNetv2']['pretrained'] = False
         
@@ -86,6 +115,7 @@ def load_rtdetr_model(config_path, resume_path, device):
     cfg.model.load_state_dict(state)
     
     class Model(nn.Module):
+        """Wrapper class to bundle model and postprocessor."""
         def __init__(self):
             super().__init__()
             self.model = cfg.model.deploy()
@@ -101,6 +131,9 @@ def load_rtdetr_model(config_path, resume_path, device):
     return model
 
 def main():
+    """
+    Main execution loop for video object tracking.
+    """
     device = opt.device
     print(f"Loading RT-DETR model from {WEIGHTS_PATH}...")
     try:
@@ -109,13 +142,16 @@ def main():
         print(f"Failed to load model: {e}")
         return
 
+    # Initialize Tracker
     tracker = BoTSORT(opt, frame_rate=opt.fps)
     tracker_timer = Timer()
     frame_timer = Timer()
 
-    # cap = cv2.VideoCapture(0)
+    # Video Source Input
+    # cap = cv2.VideoCapture(0) # Uncomment for webcam
     cap = cv2.VideoCapture("/media/aid-pc/My1TB/Zaheer/botsort/media/input3.mp4")
     
+    # Preprocessing transforms
     transforms = T.Compose([
         T.Resize((640, 640)), # Adjust based on config if needed
         T.ToTensor(),
@@ -130,25 +166,25 @@ def main():
             
             frame_timer.tic()
             
-            # Preprocess
+            # --- Preprocessing ---
             frame_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             w, h = frame_pil.size
             orig_size = torch.tensor([[w, h]]).to(device)
             im_data = transforms(frame_pil).unsqueeze(0).to(device)
             
-            # Inference
+            # --- Inference ---
             output = model(im_data, orig_size)
             labels, boxes, scores = output
             
-            # Format detections for BoT-SORT [x1, y1, x2, y2, score, cls]
-            # output content: labels (1, N), boxes (1, N, 4), scores (1, N)
+            # --- Format Detections for BoT-SORT ---
+            # output structure: labels (1, N), boxes (1, N, 4), scores (1, N)
             
-            # Assuming batch size 1
+            # Unpack batch (assuming batch size 1)
             labels = labels[0]
             boxes = boxes[0]
             scores = scores[0]
             
-            # Filter low confidence
+            # Filter low confidence detections
             mask = scores > 0.4 # basic confidence filter
             labels = labels[mask]
             boxes = boxes[mask]
@@ -167,30 +203,35 @@ def main():
             if len(detections) == 0:
                 detections = np.empty((0, 6), dtype=np.float32)
             else:
+                # [x1, y1, x2, y2, score, cls]
                 detections = np.asarray(detections, dtype=np.float32)
 
+            # --- Tracking Update ---
             tracker_timer.tic()
             online_targets = tracker.update(detections, frame)
             tracker_timer.toc()
 
+            # --- Visualization ---
             for t in online_targets:
-                x1, y1, x2, y2 = map(int, t.tlbr)
+                x1, y1, x2, y2 = map(int, t.tlbr) # Get bounding box coordinates
                 tid = t.track_id
                 
-                # Draw
+                # Draw Bounding Box
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 
                 # Get class name
                 try:
-                    # Assuming BoT-SORT STrack object has 'cls' attribute for class ID
+                    # Retrieve class ID from tracker object (if available)
                     cls_id = int(t.cls) if hasattr(t, 'cls') else 0
                     cls_name = COCO_CLASSES[cls_id] if 0 <= cls_id < len(COCO_CLASSES) else str(cls_id)
                 except Exception:
                     cls_name = "Unknown"
 
+                # Draw Label
                 label_text = f"ID {tid} | {cls_name}"
                 cv2.putText(frame, label_text, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
+            # Show Frame
             cv2.imshow('RT-DETRv4 Tracking', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -203,3 +244,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
