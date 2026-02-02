@@ -111,6 +111,13 @@ These scripts differ from `botsort_scripts` by prioritizing simplicity and real-
     *   **Prediction Wrapper**: The `predict_fn` handles RT-DETR's specific input requirements (tensors + `orig_target_sizes`) and returns a probability distribution based on **Confidence $\times$ IoU** to quantify detection quality for LIME.
     *   **Visualization**: Generates a 3-panel explanation: Original Detection, LIME Superpixel Overlay, and Importance Heatmap.
 
+#### 4. GradCAM (Gradient-weighted Class Activation Mapping)
+*   **Role**: Visualizing specific feature importance via gradients.
+*   **Difference from EigenCAM**: EigenCAM is class-agnostic (shows "what objects are here"), whereas GradCAM is class-specific (shows "what features make this a *Car*?").
+*   **Implementation**:
+    *   **YOLO** (`gradcam_yolo.py`): We assume the regression head is differentiable and maximize the class confidence score for the specific detected box.
+    *   **RT-DETR** (`gradcam_rtdetr.py`): We identify the specific **Transformer Query** responsible for the detection and propagate gradients from that query's output back to the backbone.
+
 ---
 
 ## 4. How to Run
@@ -161,4 +168,16 @@ python xai/lime/lime_yolo_detection.py --image <path_to_image> --box_idx 0
 
 ```bash
 python xai/lime/lime_rtdetr_detection.py --image "media/test1.png" --box_idx 0
+```
+
+**GradCAM for YOLO**
+```bash
+python xai/gradcam/gradcam_yolo.py --image media/test1.png --box_idx 0
+# Outputs to media/gradcam_yolo.jpg by default
+```
+
+**GradCAM for RT-DETR**
+```bash
+python xai/gradcam/gradcam_rtdetr.py --image media/test1.png --box_idx 0
+# Outputs to media/gradcam_rtdetr.jpg by default
 ```
