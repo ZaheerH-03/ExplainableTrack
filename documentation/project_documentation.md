@@ -53,7 +53,9 @@ The goal of this project is to implement robust **Multi-Object Tracking (MOT)** 
 #### 2. LIME (Local Interpretable Model-agnostic Explanations)
 *   **Role**: Feature importance explanation.
 *   **Description**: Perturbs the input image (by masking superpixels) and observes changes in prediction confidence. It fits a simple linear model to these local perturbations to determine which superpixels (regions) contributed most to the detection.
-*   **Implementation**: Applied to YOLO in `lime_yolo_detection.py`.
+*   **Implementation**: 
+    *   **YOLO**: `lime_yolo_detection.py`
+    *   **RT-DETR**: `lime_rtdetr_detection.py`
 
 ---
 
@@ -101,3 +103,62 @@ These scripts differ from `botsort_scripts` by prioritizing simplicity and real-
     3.  **Probing**: We run the YOLO detector on all $N$ perturbed images.
     4.  **scoring**: We define a custom `predict_fn`. For each perturbed image, it checks: *Is the original object still detected?* If yes, and the IoU is high, we return a high probability. If the object disappears, low probability.
     5.  **Fitting**: LIME fits a linear model to see which superpixels' presence correlates most with the object being detected. These are highlighted in the final output.
+
+#### 3. LIME for RT-DETR (`lime_rtdetr_detection.py`)
+*   **Overview**: Adapts the LIME methodology for the RT-DETR architecture.
+*   **Key Differences**:
+    *   **Model Loading**: Uses the custom `RT-DETRv4-main` codebase's `YAMLConfig` and `model.deploy()` to load the Transformer-based model properly, rather than Ultralytics' standard loader.
+    *   **Prediction Wrapper**: The `predict_fn` handles RT-DETR's specific input requirements (tensors + `orig_target_sizes`) and returns a probability distribution based on **Confidence $\times$ IoU** to quantify detection quality for LIME.
+    *   **Visualization**: Generates a 3-panel explanation: Original Detection, LIME Superpixel Overlay, and Importance Heatmap.
+
+---
+
+## 4. How to Run
+
+### A. Environment Setup
+
+To recreate the local environment, follow these steps:
+
+1.  **Create a new Conda environment** (Python 3.10 recommended):
+    ```bash
+    conda create -n yolo_bot python=3.10 -y
+    conda activate yolo_bot
+    ```
+
+2.  **Install Base Dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **Install Project-Specific Libraries** (YOLO, LIME, etc.):
+    ```bash
+    pip install ultralytics lime pytorch-grad-cam
+    ```
+
+### B. Tracking Scripts
+
+Run these from the project root (`botsort/`):
+
+**RT-DETR Tracking**
+```bash
+python botsort_scripts/track_rtdetrv4.py
+```
+
+**YOLOv11 Tracking**
+```bash
+python botsort_scripts/track_yolov11.py
+```
+
+### B. XAI Scripts
+
+**LIME for YOLO**
+```bash
+python xai/lime/lime_yolo_detection.py --image <path_to_image> --box_idx 0
+```
+
+**LIME for RT-DETR**
+*Note: If your path contains wildcards (like `*`), enclose the paths in quotes to avoid shell expansion errors.*
+
+```bash
+python xai/lime/lime_rtdetr_detection.py --image "media/test1.png" --box_idx 0
+```

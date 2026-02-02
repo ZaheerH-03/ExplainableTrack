@@ -240,13 +240,22 @@ def lime_explain_detection(
 
 
 if __name__ == "__main__":
-    # Example usage
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="LIME Explanation for YOLO")
+    parser.add_argument("--image", type=str, default="media/test1.png", help="Path to input image")
+    parser.add_argument("--model", type=str, default="weights/yolo11m.pt", help="Path to YOLO model")
+    parser.add_argument("--box_idx", type=int, default=0, help="Index of detection to explain")
+    parser.add_argument("--samples", type=int, default=1000, help="Number of LIME samples")
+    parser.add_argument("--output", type=str, default="media/lime_yolo_explanation.jpg", help="Output path")
+    
+    args = parser.parse_args()
+    
     lime_explain_detection(
-        image_path="./media/devendar_background.png",
-        model_path="weights/yolo11m.pt",
-        target_box_idx=0,  # Explain the highest confidence detection
-        num_samples=2000,   # Increase for better quality (but slower)
-        num_features=20,    # Number of superpixels to highlight
-        output_path="media/lime_detection_explanation.jpg"
+        image_path=args.image,
+        model_path=args.model,
+        target_box_idx=args.box_idx,
+        num_samples=args.samples,
+        output_path=args.output
     )
 
