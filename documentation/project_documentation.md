@@ -181,3 +181,16 @@ python xai/gradcam/gradcam_yolo.py --image media/test1.png --box_idx 0
 python xai/gradcam/gradcam_rtdetr.py --image media/test1.png --box_idx 0
 # Outputs to media/gradcam_rtdetr.jpg by default
 ```
+
+**EigenCAM**
+*Note: These scripts currently use hardcoded paths. You may need to edit the `if __name__ == "__main__":` block in the files to change the input image or model path.*
+
+```bash
+# YOLO
+python xai/eigen_cam/eigen_cam_yolo.py
+
+# RT-DETR
+python xai/eigen_cam/eigen_cam_rtdetr.py
+# Optional: View available layers
+python xai/eigen_cam/eigen_cam_rtdetr.py --show-layers
+```
