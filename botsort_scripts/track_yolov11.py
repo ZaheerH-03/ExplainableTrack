@@ -50,7 +50,7 @@ opt.ablation = False
 opt.track_high_thresh = 0.5
 opt.track_low_thresh = 0.1
 opt.new_track_thresh = 0.6
-opt.track_buffer = 1200
+opt.track_buffer = 3600
 opt.match_thresh = 0.7
 opt.aspect_ratio_thresh = 1.6
 opt.min_box_area = 10
@@ -62,7 +62,7 @@ opt.with_reid = True
 opt.fast_reid_config = str(PROJECT_ROOT / "BoT-SORT/fast_reid/configs/MOT17/sbs_S50.yml")
 opt.fast_reid_weights = str(PROJECT_ROOT / "weights/mot17_sbs_S50.pth")
 opt.proximity_thresh = 2.0
-opt.appearance_thresh = 0.45
+opt.appearance_thresh = 0.30
 opt.cmc_method = "sparseOptFlow"
 opt.device = device
 opt.fps = 30
@@ -86,11 +86,13 @@ COCO_CLASSES = [
 ]
 
 # --- Main Processing Loop ---
-# cap = cv2.VideoCapture(0) # Use 0 for webcam
-cap = cv2.VideoCapture(str(PROJECT_ROOT / "media/input3.mp4"))
+cap = cv2.VideoCapture(0) # Use 0 for webcam
+# cap = cv2.VideoCapture(str(PROJECT_ROOT / "media/input3.mp4"))
 assert cap.isOpened(), "Error opening video stream or file"
 
 frame_id = 0
+cv2.namedWindow("Tracking", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("Tracking", 1280, 720)
 with torch.no_grad():
     while True:
         ret, frame = cap.read()

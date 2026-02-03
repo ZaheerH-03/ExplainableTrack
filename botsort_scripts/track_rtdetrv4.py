@@ -61,7 +61,7 @@ opt.ablation = False
 opt.track_high_thresh = 0.5  # High detection threshold for tracking
 opt.track_low_thresh = 0.1   # Low detection threshold for tracking
 opt.new_track_thresh = 0.6   # Threshold for creating a new track
-opt.track_buffer = 1200      # Buffer size for tracking history
+opt.track_buffer = 3600      # Buffer size for tracking history
 opt.match_thresh = 0.7       # IoU matching threshold
 opt.aspect_ratio_thresh = 1.6 # Aspect ratio threshold for filtering
 opt.min_box_area = 10        # Minimum box area for valid detections
@@ -70,7 +70,7 @@ opt.with_reid = True         # Enable ReID module
 opt.fast_reid_config = str(PROJECT_ROOT / "BoT-SORT/fast_reid/configs/MOT17/sbs_S50.yml")
 opt.fast_reid_weights = str(PROJECT_ROOT / "weights/mot17_sbs_S50.pth")
 opt.proximity_thresh = 2.0   # Proximity threshold for ReID
-opt.appearance_thresh = 0.45 # Appearance similarity threshold
+opt.appearance_thresh = 0.30 # Appearance similarity threshold
 opt.cmc_method = "sparseOptFlow" # Camera motion compensation method
 opt.device = "cuda" if torch.cuda.is_available() else "cpu"
 opt.fps = 30
@@ -148,8 +148,8 @@ def main():
     frame_timer = Timer()
 
     # Video Source Input
-    # cap = cv2.VideoCapture(0) # Uncomment for webcam
-    cap = cv2.VideoCapture("/media/aid-pc/My1TB/Zaheer/botsort/media/input3.mp4")
+    cap = cv2.VideoCapture(0) # Uncomment for webcam
+    # cap = cv2.VideoCapture("/media/aid-pc/My1TB/Zaheer/botsort/media/input3.mp4")
     
     # Preprocessing transforms
     transforms = T.Compose([
@@ -158,6 +158,8 @@ def main():
     ])
 
     print("Starting tracking...")
+    cv2.namedWindow("RT-DETRv4 Tracking", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("RT-DETRv4 Tracking", 1280, 720)
     with torch.no_grad():
         while True:
             ret, frame = cap.read()
