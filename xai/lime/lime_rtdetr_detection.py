@@ -31,30 +31,57 @@ from lime import lime_image
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 # RT-DETRv4 Path Setup
-RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4-main"
+RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4"
 if not RT_DETR_ROOT.exists():
-    raise FileNotFoundError(f"Could not find RT-DETRv4-main at {RT_DETR_ROOT}")
+    raise FileNotFoundError(f"Could not find RT-DETRv4 at {RT_DETR_ROOT}")
 
 # Import RT-DETRv4 modules
 sys.path.append(str(RT_DETR_ROOT))
 from engine.core import YAMLConfig
 
 # --- Configuration ---
-DEFAULT_WEIGHTS = PROJECT_ROOT / "weights/RTv4-L-hgnet.pth"
-DEFAULT_CONFIG = RT_DETR_ROOT / "configs/rtv4/rtv4_hgnetv2_l_coco.yml"
+DEFAULT_WEIGHTS = PROJECT_ROOT / "weights/best_stg2.pth"
+DEFAULT_CONFIG = RT_DETR_ROOT / "configs/rtv4/rtv4_x_custom.yml"
 
 # COCO Class Names
-COCO_CLASSES = [
-    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
-    "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
-    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
-    "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
-    "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
-    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
-    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
-    "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
-    "hair drier", "toothbrush"
-]
+# COCO_CLASSES = [
+#     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+#     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+#     "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+#     "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+#     "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+#     "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+#     "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
+#     "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
+#     "hair drier", "toothbrush"
+# ]
+CUSTOM_CLASSES = ["apc",
+    "army_truck",
+    "artillery_gun",
+    "bmp",
+    "camouflage_soldier",
+    "civilian",
+    "civilian_vehicle",
+    "command_vehicle",
+    "engineer_vehicle",
+    "fkill",
+    "imv",
+    "kkill",
+    "military_aircraft",
+    "military_artillery",
+    "military_truck",
+    "military_vehicle",
+    "military_warship",
+    "missile",
+    "mkill",
+    "mt_lb",
+    "reconnaissance_vehicle",
+    "rocket",
+    "rocket_artillery",
+    "soldier",
+    "tank",
+    "trench",
+    "weapon"]
 
 def load_rtdetr_model(config_path, resume_path, device='cuda'):
     """
@@ -180,7 +207,7 @@ def lime_explain_rtdetr(
     target_score = scores[target_idx]
     target_label = int(labels[target_idx])
     
-    class_name = COCO_CLASSES[target_label] if target_label < len(COCO_CLASSES) else str(target_label)
+    class_name = CUSTOM_CLASSES[target_label] if target_label < len(CUSTOM_CLASSES) else str(target_label)
     
     print(f"\nExplaining detection #{target_box_idx}:")
     print(f"  Class: {class_name} ({target_label})")
@@ -323,10 +350,10 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="LIME Explanation for RT-DETR")
-    parser.add_argument("--image", type=str, default=str(PROJECT_ROOT / "media/test1.png"), help="Path to input image")
+    parser.add_argument("--image", type=str, default=str(PROJECT_ROOT / "media/input_images_xai/tanks3.jpg"), help="Path to input image")
     parser.add_argument("--box_idx", type=int, default=0, help="Index of detection to explain")
     parser.add_argument("--samples", type=int, default=1000, help="Number of LIME samples")
-    parser.add_argument("--output", type=str, default="media/lime_rtdetr_result.jpg", help="Output path")
+    parser.add_argument("--output", type=str, default="media/lime_outputs/tanks3_rtdetr.jpg", help="Output path")
     
     args = parser.parse_args()
     

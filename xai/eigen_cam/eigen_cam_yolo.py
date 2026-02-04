@@ -88,9 +88,9 @@ def print_model_layers(model_path):
 
 
 def generate_eigencam_visualization(
-    model_path='/media/aid-pc/My1TB/Zaheer/botsort/weights/yolo11m.pt',
-    image_path='test2.png',
-    output_path='yolo_eigencam_explanation1.jpg',
+    model_path='/media/aid-pc/My1TB/Zaheer/Explainable_Object_tacking/weights/yolov11_best.pt',
+    image_path='media/input_images_xai/tank.jpg',
+    output_path='media/eigen_cam_outputs/yolo_eigencam_explanation1.jpg',
     target_layer_idx=-2
 ):
     """
@@ -181,14 +181,14 @@ def generate_eigencam_visualization(
 
 if __name__ == "__main__":
     # Uncomment the line below to see all available layers
-    print_model_layers('/media/aid-pc/My1TB/Zaheer/botsort/weights/yolo11m.pt')
+    print_model_layers('/media/aid-pc/My1TB/Zaheer/Explainable_Object_tacking/weights/yolov11_best.pt')
     
     # Example usage
     try:
         generate_eigencam_visualization(
-            model_path='/media/aid-pc/My1TB/Zaheer/botsort/weights/yolo11m.pt',
-            image_path='media/devendar.jpg',
-            output_path='media/yolo_eigencam_explanation3.jpg',
+            model_path='/media/aid-pc/My1TB/Zaheer/Explainable_Object_tacking/weights/yolov11_best.pt',
+            image_path='media/input_images_xai/tank.jpg',
+            output_path='media/eigen_cam_outputs/yolo_eigencam_explanation1.jpg',
             target_layer_idx=-3  # Changed from -1 to -3 to avoid Detect layer
         )
         # generate_eigencam_visualization(

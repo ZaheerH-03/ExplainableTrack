@@ -24,8 +24,8 @@ from pathlib import Path
 
 # --- Path Setup ---
 # Add RT-DETR root to path
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4-main"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4"
 
 if str(RT_DETR_ROOT) not in sys.path:
     sys.path.append(str(RT_DETR_ROOT))
@@ -241,13 +241,13 @@ def generate_eigencam_visualization(
 
 if __name__ == "__main__":
     # Example Paths - Adjust as needed
-    PROJECT_ROOT_PATH = Path("/media/aid-pc/My1TB/Zaheer/botsort")
-    WEIGHTS = PROJECT_ROOT_PATH / "weights/RTv4-L-hgnet.pth"
-    RT_DETR_MAIN = PROJECT_ROOT_PATH / "RT-DETRv4-main"
-    CONFIG = RT_DETR_MAIN / "configs/rtv4/rtv4_hgnetv2_l_coco.yml"
+    PROJECT_ROOT_PATH = Path("/media/aid-pc/My1TB/Zaheer/Explainable_Object_tacking")
+    WEIGHTS = PROJECT_ROOT_PATH / "weights/best_stg2.pth"
+    RT_DETR_MAIN = PROJECT_ROOT_PATH / "RT-DETRv4"
+    CONFIG = RT_DETR_MAIN / "configs/rtv4/rtv4_x_custom.yml"
     
-    IMAGE = "media/devendar.jpg"
-    OUTPUT = "media/rtdetr_eigencam.jpg"
+    IMAGE = "media/input_images_xai/tanks3.jpg"
+    OUTPUT = "media/eigen_cam_outputs/tanks3_rtdetr.jpg"
     
     if not CONFIG.exists():
         print(f"Config not found: {CONFIG}")

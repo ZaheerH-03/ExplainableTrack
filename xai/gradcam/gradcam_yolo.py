@@ -212,11 +212,11 @@ def run_gradcam_yolo(image_path, model_path, target_layer_idx=-2, box_idx=0, out
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image", type=str, default="media/3.png")
-    parser.add_argument("--model", type=str, default="weights/yolo11m.pt")
+    parser.add_argument("--image", type=str, default="media/input_images_xai/tanks3.jpg")
+    parser.add_argument("--model", type=str, default="weights/yolov11_best.pt")
     parser.add_argument("--box_idx", type=int, default=0)
     parser.add_argument("--target_layer", type=int, default=-2)
-    parser.add_argument("--output", type=str, default="media/gradcam_yolo.jpg")
+    parser.add_argument("--output", type=str, default="media/gradcam_outputs/tanks3.jpg")
     args = parser.parse_args()
     
     try:

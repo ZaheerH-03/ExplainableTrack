@@ -20,7 +20,7 @@ from pathlib import Path
 
 # --- Path Setup (Same as other scripts) ---
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4-main"
+RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4"
 if str(RT_DETR_ROOT) not in sys.path:
     sys.path.append(str(RT_DETR_ROOT))
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     # Hardcoded paths matching environment
-    WEIGHTS = PROJECT_ROOT / "weights/RTv4-L-hgnet.pth"
-    CONFIG = RT_DETR_ROOT / "configs/rtv4/rtv4_hgnetv2_l_coco.yml"
+    WEIGHTS = PROJECT_ROOT / "weights/best_stg2.pth"
+    CONFIG = RT_DETR_ROOT / "configs/rtv4/rtv4_x_custom.yml"
     
     run_gradcam_rtdetr(args.image, CONFIG, WEIGHTS, args.box_idx, output_path=args.output)

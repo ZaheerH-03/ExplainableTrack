@@ -20,17 +20,44 @@ from ultralytics import YOLO
 import matplotlib.pyplot as plt
 
 # COCO class names matching the YOLO trained classes
-COCO_CLASSES = [
-    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
-    "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
-    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
-    "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
-    "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
-    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
-    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
-    "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
-    "hair drier", "toothbrush"
-]
+# COCO_CLASSES = [
+#     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+#     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+#     "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+#     "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+#     "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+#     "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+#     "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
+#     "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
+#     "hair drier", "toothbrush"
+# ]
+CUSTOM_CLASSES = ["apc",
+    "army_truck",
+    "artillery_gun",
+    "bmp",
+    "camouflage_soldier",
+    "civilian",
+    "civilian_vehicle",
+    "command_vehicle",
+    "engineer_vehicle",
+    "fkill",
+    "imv",
+    "kkill",
+    "military_aircraft",
+    "military_artillery",
+    "military_truck",
+    "military_vehicle",
+    "military_warship",
+    "missile",
+    "mkill",
+    "mt_lb",
+    "reconnaissance_vehicle",
+    "rocket",
+    "rocket_artillery",
+    "soldier",
+    "tank",
+    "trench",
+    "weapon"]
 
 def lime_explain_detection(
     image_path,
@@ -92,7 +119,7 @@ def lime_explain_detection(
     target_class = int(classes[target_idx])
     target_score = scores[target_idx]
     
-    class_name = COCO_CLASSES[target_class] if target_class < len(COCO_CLASSES) else f"Class_{target_class}"
+    class_name = CUSTOM_CLASSES[target_class] if target_class < len(CUSTOM_CLASSES) else f"Class_{target_class}"
     
     print(f"\nExplaining detection #{target_box_idx}:")
     print(f"  Class: {class_name} (ID: {target_class})")
@@ -243,11 +270,11 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="LIME Explanation for YOLO")
-    parser.add_argument("--image", type=str, default="media/test1.png", help="Path to input image")
-    parser.add_argument("--model", type=str, default="weights/yolo11m.pt", help="Path to YOLO model")
+    parser.add_argument("--image", type=str, default="media/input_images_xai/tank.jpg", help="Path to input image")
+    parser.add_argument("--model", type=str, default="weights/yolov11_best.pt", help="Path to YOLO model")
     parser.add_argument("--box_idx", type=int, default=0, help="Index of detection to explain")
     parser.add_argument("--samples", type=int, default=1000, help="Number of LIME samples")
-    parser.add_argument("--output", type=str, default="media/lime_yolo_explanation.jpg", help="Output path")
+    parser.add_argument("--output", type=str, default="media/lime_outputs/tank_yolo.jpg", help="Output path")
     
     args = parser.parse_args()
     
