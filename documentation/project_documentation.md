@@ -57,6 +57,11 @@ The goal of this project is to implement robust **Multi-Object Tracking (MOT)** 
     *   **YOLO**: `lime_yolo_detection.py`
     *   **RT-DETR**: `lime_rtdetr_detection.py`
 
+#### 3. DeblurGAN (Image Deblurring)
+*   **Role**: Improving image quality before detection/tracking.
+*   **Description**: Uses a Generative Adversarial Network (GAN) to remove motion blur from images. It works by having a generator create sharp images and a discriminator trying to distinguish them from real sharp images.
+*   **Implementation**: `DeblurGAN/` directory. Optimized to use RESNET-based generator.
+
 ---
 
 ## 3. Implementation Details & Workflow
@@ -181,6 +186,19 @@ python xai/gradcam/gradcam_yolo.py --image media/test1.png --box_idx 0
 python xai/gradcam/gradcam_rtdetr.py --image media/test1.png --box_idx 0
 # Outputs to media/gradcam_rtdetr.jpg by default
 ```
+
+### C. Image Enhancement (SRGAN & DeblurGAN)
+
+**SRGAN (Super Resolution)**
+```bash
+python SRGAN/inference.py --image media/lowres.jpg --model weights/generator_sr.pth --output media/highres.jpg
+```
+
+**DeblurGAN (Deblurring)**
+```bash
+python DeblurGAN/inference_deblur.py --image media/blurred.jpg --output media/sharp.jpg
+```
+
 
 **EigenCAM**
 *Note: These scripts currently use hardcoded paths. You may need to edit the `if __name__ == "__main__":` block in the files to change the input image or model path.*
