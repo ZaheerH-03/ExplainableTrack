@@ -18,8 +18,12 @@ class TestModel(BaseModel):
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf,
                                       opt.which_model_netG, opt.norm, not opt.no_dropout, self.gpu_ids, False,
                                       opt.learn_residual)
-        which_epoch = opt.which_epoch
-        self.load_network(self.netG, 'G', which_epoch)
+        if getattr(opt, 'model_path', None):
+             self.netG.load_state_dict(torch.load(opt.model_path, map_location=torch.device('cuda') if len(opt.gpu_ids) > 0 else torch.device('cpu')))
+             print(f"Loaded model from {opt.model_path}")
+        else:
+             which_epoch = opt.which_epoch
+             self.load_network(self.netG, 'G', which_epoch)
 
         print('---------- Networks initialized -------------')
         networks.print_network(self.netG)

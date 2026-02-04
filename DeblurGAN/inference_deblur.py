@@ -22,6 +22,12 @@ def run_deblur():
     opt = test_opt.parser.parse_args()
     opt.isTrain = False
     
+    # Check if user passed model path via --model
+    if opt.model and opt.model.endswith('.pth') and os.path.exists(opt.model):
+        if not opt.model_path:
+             print(f"Note: usage of --model for weight path detected. Moving '{opt.model}' to model_path.")
+             opt.model_path = opt.model
+    
     # Defaults for high quality inference (from README and test.py)
     opt.model = 'test'
     opt.dataset_mode = 'single'
@@ -76,21 +82,7 @@ def run_deblur():
         opt.dataroot = tmp_dir
 
         # 3. Initialize Model
-        from models.test_model import TestModel
-        original_load = TestModel.load_network
-        
-        if opt.model_path:
-            if not os.path.exists(opt.model_path):
-                print(f"Error: Model path {opt.model_path} not found.")
-                return
-            TestModel.load_network = lambda self, network, network_label, epoch_label: None
-        
         model = create_model(opt)
-        
-        if opt.model_path:
-            print(f"Loading weights from {opt.model_path}...")
-            TestModel.load_network = original_load
-            model.netG.load_state_dict(torch.load(opt.model_path, map_location=device))
 
         # 4. Use Official DataLoader
         data_loader = CreateDataLoader(opt)
@@ -110,7 +102,16 @@ def run_deblur():
                 deblurred_img_numpy = deblurred_img_numpy[:orig_h, :orig_w, :]
             
             # Save
-            save_path = opt.output if opt.output else f"{os.path.splitext(img_name)[0]}_deblurred.png"
+            if opt.output:
+                # If path is a directory, ends with separator, or has no extension, treat as directory
+                if os.path.isdir(opt.output) or opt.output.endswith(os.sep) or not os.path.splitext(opt.output)[1]:
+                    os.makedirs(opt.output, exist_ok=True)
+                    save_path = os.path.join(opt.output, f"{os.path.splitext(img_name)[0]}_deblurred.png")
+                else:
+                    save_path = opt.output
+            else:
+                save_path = f"{os.path.splitext(img_name)[0]}_deblurred.png"
+            
             Image.fromarray(deblurred_img_numpy).save(save_path)
             print(f"Result saved to {save_path}")
             break 
