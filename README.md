@@ -11,7 +11,7 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 ## 🚀 Key Features
 
 -   **State-of-the-Art Tracking**: Integration of [BoT-SORT](https://github.com/NirAharon/BoT-SORT) for robust multi-object tracking.
--   **Modern Detectors**: Support for **YOLOv11** and **RT-DETRv4** via [Ultralytics](https://github.com/ultralytics/ultralytics).
+-   **Modern Detectors**: Support for **YOLOv11** via [Ultralytics](https://github.com/ultralytics/ultralytics) and **RT-DETRv4** via the included custom `RT-DETRv4-main` codebase.
 -   **Explainable AI (XAI)**:
     -   **LIME (Local Interpretable Model-agnostic Explanations)**: Highlight superpixels most responsible for a specific detection.
     -   **Eigen-CAM**: Visualize class-activation maps to see where the model is looking in the image or video.
@@ -25,7 +25,7 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 
 ```text
 ├── BoT-SORT               # Original BoT-SORT repository with patches and fixes as a submodule/dependency
-├── RT-DETRv4-main         # RT-DETRv4 source code and utilities
+├── RT-DETRv4         # RT-DETRv4 source code and utilities
 ├── botsort_scripts        # Main entry points for YOLOv11 and RT-DETR tracking
 │   ├── track_yolov11.py   # Tracker using YOLOv11
 │   └── track_rtdetrv4.py  # Tracker using RT-DETRv4
@@ -132,7 +132,8 @@ LIME and Eigen-CAM provide intuitive heatmaps, helping researchers identify if m
 ## 🤝 Acknowledgements
 
 -   [BoT-SORT](https://github.com/NirAharon/BoT-SORT) for the tracking logic.
--   [Ultralytics](https://github.com/ultralytics/ultralytics) for the YOLO and RT-DETR framework.
+-   [Ultralytics](https://github.com/ultralytics/ultralytics) for the YOLO framework.
+-   [RT-DETRv4](https://github.com/RT-DETRs/RT-DETRv4) for the transformer-based detection architecture.
 -   [LIME](https://github.com/marcotcr/lime) for the explanation framework.
 -   [pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam) for CAM implementations.
 
