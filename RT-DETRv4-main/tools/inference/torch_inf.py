@@ -17,7 +17,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from engine.core import YAMLConfig
 
 
-def draw(images, labels, boxes, scores, thrh=0.4):
+def draw(images, labels, boxes, scores, thrh=0.4, output_path='torch_results.jpg'):
     for i, im in enumerate(images):
         draw = ImageDraw.Draw(im)
 
@@ -28,12 +28,12 @@ def draw(images, labels, boxes, scores, thrh=0.4):
 
         for j, b in enumerate(box):
             draw.rectangle(list(b), outline='red')
-            draw.text((b[0], b[1]), text=f"{lab[j].item()} {round(scrs[j].item(), 2)}", fill='blue', )
+            draw.text((b[0], b[1]), text=f"{lab[j].item()} | {round(scrs[j].item(), 2)}", fill='red', )
 
-        im.save('torch_results.jpg')
+        im.save(output_path)
 
 
-def process_image(model, device, file_path):
+def process_image(model, device, file_path, output_path):
     im_pil = Image.open(file_path).convert('RGB')
     w, h = im_pil.size
     orig_size = torch.tensor([[w, h]]).to(device)
@@ -47,10 +47,10 @@ def process_image(model, device, file_path):
     output = model(im_data, orig_size)
     labels, boxes, scores = output
 
-    draw([im_pil], labels, boxes, scores)
+    draw([im_pil], labels, boxes, scores, output_path=output_path)
 
 
-def process_video(model, device, file_path):
+def process_video(model, device, file_path, output_path):
     cap = cv2.VideoCapture(file_path)
 
     # Get video properties
@@ -60,7 +60,7 @@ def process_video(model, device, file_path):
 
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('torch_results.mp4', fourcc, fps, (orig_w, orig_h))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (orig_w, orig_h))
 
     transforms = T.Compose([
         T.Resize((640, 640)),
@@ -86,7 +86,25 @@ def process_video(model, device, file_path):
         labels, boxes, scores = output
 
         # Draw detections on the frame
-        draw([frame_pil], labels, boxes, scores)
+        # Note: draw function saves to file, which we don't want for video frames. 
+        # We need to inline the drawing or modify draw to return the image.
+        # For efficiency in video, we'll inline the drawing logic here or modify draw.
+        # However, to be quick and consistent with existing code structure:
+        
+        # Let's just modify the existing logic to draw on the PIL image 
+        # without saving it inside the draw function if it's for video, 
+        # OR we can just replicate the drawing logic here.
+        # Replicating drawing logic for simplicity to avoid changing draw signature too much for single image use case.
+        
+        draw_obj = ImageDraw.Draw(frame_pil)
+        scr = scores[0]
+        lab = labels[0][scr > 0.4]
+        box = boxes[0][scr > 0.4]
+        scrs = scr[scr > 0.4]
+
+        for j, b in enumerate(box):
+            draw_obj.rectangle(list(b), outline='red')
+            draw_obj.text((b[0], b[1]), text=f"{lab[j].item()} | {round(scrs[j].item(), 2)}", fill='red', )
 
         # Convert back to OpenCV image
         frame = cv2.cvtColor(np.array(frame_pil), cv2.COLOR_RGB2BGR)
@@ -100,7 +118,7 @@ def process_video(model, device, file_path):
 
     cap.release()
     out.release()
-    print("Video processing complete. Result saved as 'results_video.mp4'.")
+    print(f"Video processing complete. Result saved as '{output_path}'.")
 
 
 def main(args):
@@ -138,13 +156,19 @@ def main(args):
 
     # Check if the input file is an image or a video
     file_path = args.input
+    output_path = args.output
+    
     if os.path.splitext(file_path)[-1].lower() in ['.jpg', '.jpeg', '.png', '.bmp']:
         # Process as image
-        process_image(model, device, file_path)
-        print("Image processing complete.")
+        if output_path is None:
+            output_path = 'torch_results.jpg'
+        process_image(model, device, file_path, output_path)
+        print(f"Image processing complete. Saved to {output_path}")
     else:
         # Process as video
-        process_video(model, device, file_path)
+        if output_path is None:
+            output_path = 'torch_results.mp4'
+        process_video(model, device, file_path, output_path)
 
 
 if __name__ == '__main__':
@@ -153,6 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', type=str, required=True)
     parser.add_argument('-r', '--resume', type=str, required=True)
     parser.add_argument('-i', '--input', type=str, required=True)
+    parser.add_argument('-o', '--output', type=str, default=None, help='Path to save the output file')
     parser.add_argument('-d', '--device', type=str, default='cpu')
     args = parser.parse_args()
     main(args)
