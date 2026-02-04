@@ -41,8 +41,8 @@ from tracker.mc_bot_sort import BoTSORT
 from tracker.tracking_utils.timer import Timer
 
 # --- Configuration & Constants ---
-WEIGHTS_PATH = PROJECT_ROOT / "weights/RTv4-L-hgnet.pth"
-CONFIG_PATH = RT_DETR_ROOT / "configs/rtv4/rtv4_hgnetv2_l_coco.yml"
+WEIGHTS_PATH = PROJECT_ROOT / "weights/best_stg1.pth"
+CONFIG_PATH = RT_DETR_ROOT / "configs/rtv4/rtv4_x_custom.yml"
 
 if not WEIGHTS_PATH.exists():
     print(f"Error: Weights not found at {WEIGHTS_PATH}")
@@ -76,17 +76,44 @@ opt.device = "cuda" if torch.cuda.is_available() else "cpu"
 opt.fps = 30
 
 # COCO Class Names for visualization
-COCO_CLASSES = [
-    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
-    "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
-    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
-    "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
-    "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
-    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
-    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
-    "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
-    "hair drier", "toothbrush"
-]
+# COCO_CLASSES = [
+#     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+#     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+#     "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+#     "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+#     "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+#     "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+#     "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
+#     "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
+#     "hair drier", "toothbrush"
+# ]
+CUSTOM_CLASSES = ["apc",
+    "army_truck",
+    "artillery_gun",
+    "bmp",
+    "camouflage_soldier",
+    "civilian",
+    "civilian_vehicle",
+    "command_vehicle",
+    "engineer_vehicle",
+    "fkill",
+    "imv",
+    "kkill",
+    "military_aircraft",
+    "military_artillery",
+    "military_truck",
+    "military_vehicle",
+    "military_warship",
+    "missile",
+    "mkill",
+    "mt_lb",
+    "reconnaissance_vehicle",
+    "rocket",
+    "rocket_artillery",
+    "soldier",
+    "tank",
+    "trench",
+    "weapon"]
 
 def load_rtdetr_model(config_path, resume_path, device):
     """
@@ -148,8 +175,8 @@ def main():
     frame_timer = Timer()
 
     # Video Source Input
-    cap = cv2.VideoCapture(0) # Uncomment for webcam
-    # cap = cv2.VideoCapture("/media/aid-pc/My1TB/Zaheer/botsort/media/input3.mp4")
+    # cap = cv2.VideoCapture(0) # Uncomment for webcam
+    cap = cv2.VideoCapture("/media/aid-pc/My1TB/Zaheer/Explainable_Object_tacking/media/input.mp4")
     
     # Preprocessing transforms
     transforms = T.Compose([
@@ -225,7 +252,7 @@ def main():
                 try:
                     # Retrieve class ID from tracker object (if available)
                     cls_id = int(t.cls) if hasattr(t, 'cls') else 0
-                    cls_name = COCO_CLASSES[cls_id] if 0 <= cls_id < len(COCO_CLASSES) else str(cls_id)
+                    cls_name = CUSTOM_CLASSES[cls_id] if 0 <= cls_id < len(CUSTOM_CLASSES) else str(cls_id)
                 except Exception:
                     cls_name = "Unknown"
 

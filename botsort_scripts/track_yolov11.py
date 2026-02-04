@@ -27,7 +27,7 @@ from tracker.tracking_utils.timer import Timer
 
 # --- YOLOv11 Model Initialization ---
 # Assuming weights are in the standard weights directory relative to project root
-model_path = PROJECT_ROOT / "weights/yolo11m.pt"
+model_path = PROJECT_ROOT / "weights/yolov11_best.pt"
 if not model_path.exists():
     # Fallback or auto-download by YOLO class if strictly needed, 
     # but let's point to where it should be.
@@ -73,21 +73,48 @@ tracker_timer = Timer()
 frame_timer = Timer()
 
 # COCO Class Names for display
-COCO_CLASSES = [
-    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
-    "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
-    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
-    "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
-    "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
-    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
-    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
-    "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
-    "hair drier", "toothbrush"
+# COCO_CLASSES = [
+#     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+#     "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+#     "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+#     "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+#     "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+#     "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+#     "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
+#     "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
+#     "hair drier", "toothbrush"
+# ]
+CUSTOM_CLASSES = ["apc",
+    "army_truck",
+    "artillery_gun",
+    "bmp",
+    "camouflage_soldier",
+    "civilian",
+    "civilian_vehicle",
+    "command_vehicle",
+    "engineer_vehicle",
+    "fkill",
+    "imv",
+    "kkill",
+    "military_aircraft",
+    "military_artillery",
+    "military_truck",
+    "military_vehicle",
+    "military_warship",
+    "missile",
+    "mkill",
+    "mt_lb",
+    "reconnaissance_vehicle",
+    "rocket",
+    "rocket_artillery",
+    "soldier",
+    "tank",
+    "trench",
+    "weapon"
 ]
-
 # --- Main Processing Loop ---
-cap = cv2.VideoCapture(0) # Use 0 for webcam
-# cap = cv2.VideoCapture(str(PROJECT_ROOT / "media/input3.mp4"))
+# cap = cv2.VideoCapture(0) # Use 0 for webcam
+cap = cv2.VideoCapture(str(PROJECT_ROOT / "media/input.mp4"))
 assert cap.isOpened(), "Error opening video stream or file"
 
 frame_id = 0
@@ -142,7 +169,7 @@ with torch.no_grad():
             try:
                 # Use t.cls (BoT-SORT track class)
                 cls_id = int(t.cls) if hasattr(t, 'cls') else 0
-                cls_name = COCO_CLASSES[cls_id] if 0 <= cls_id < len(COCO_CLASSES) else str(cls_id)
+                cls_name = CUSTOM_CLASSES[cls_id] if 0 <= cls_id < len(CUSTOM_CLASSES) else str(cls_id)
             except Exception:
                 cls_name = "Unknown"
 
