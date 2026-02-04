@@ -194,4 +194,3 @@ cap.release()
 cv2.destroyAllWindows()
 print("Avg FPS:",1.0/frame_timer.average_time)
 print("Tracker FPS:",1.0/tracker_timer.average_time)
-
