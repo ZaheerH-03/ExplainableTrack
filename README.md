@@ -17,6 +17,7 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
     -   **Eigen-CAM**: Visualize class-activation maps to see where the model is looking in the image or video.
 -   **Re-Identification (ReID)**: High-performance ReID using `fast-reid` models.
 -   **Live & Batch Processing**: Scripts for real-time tracking from webcams and batch processing of video files.
+-   **Custom Military/Vehicle Dataset Support**: Configured for 27 specific classes (e.g., Tank, APC, Soldier) using custom trained models.
 
 ---
 
@@ -77,9 +78,19 @@ To run the tracker using **YOLOv11**:
 python botsort_scripts/track_yolov11.py
 ```
 
-To run the tracker using **RT-DETRv4**:
+To run the tracker using **RT-DETRv4** (configured for X-Large model with custom classes):
 ```bash
 python botsort_scripts/track_rtdetrv4.py
+```
+
+To run **RT-DETR Inference Only** (on images/videos):
+```bash
+python RT-DETRv4-main/tools/inference/torch_inf.py \
+    -c RT-DETRv4-main/configs/rtv4/rtv4_x_custom.yml \
+    -r weights/best_stg2.pth \
+    -i media/input_images_xai/tank.jpg \
+    -o media/output_result.jpg \
+    -d cuda:0
 ```
 
 ### 💡 Explainable AI (XAI)

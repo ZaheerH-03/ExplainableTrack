@@ -22,12 +22,18 @@ The goal of this project is to implement robust **Multi-Object Tracking (MOT)** 
 #### 1. YOLOv11 (You Only Look Once v11)
 *   **Role**: Primary object detector for real-time applications.
 *   **Description**: The latest iteration in the YOLO family, known for its speed and accuracy balance. It treats object detection as a single regression problem, predicting bounding boxes and class probabilities directly from full images in one evaluation.
-*   **Implementation**: Used in `track_yolov11.py`, `botsort_live.py`, and the XAI modules. We utilize the `ultralytics` library to load pretrained weights (`yolov11m.pt`, `yolov8m.pt`) and perform inference.
+*   **Implementation**: 
+    *   **Tracking**: Used in `botsort_scripts/track_yolov11.py`. configured to use **custom weights** (`weights/yolov11_best.pt`) and a specific list of **27 Military/Vehicle Classes**.
+    *   **Inference**: A standalone script `Yolo_detection/yolo_infer.py` allows for direct inference on images/videos using the custom model.
+    *   **Live Tracking**: The `ultralytics_tracking` examples demonstrate usage with standard models.
 
 #### 2. RT-DETRv4 (Real-Time DEtection TRansformer)
 *   **Role**: High-accuracy detector using Transformer architecture.
 *   **Description**: An efficient version of the DETR (Detection Transformer) architecture optimized for real-time performance. Unlike YOLO (CNN-based), it uses attention mechanisms to capture global context.
-*   **Implementation**: Used in `track_rtdetrv4.py`. We integrate the `RT-DETRv4-main` codebase, manually handling configuration loading (`YAMLConfig`) and model deployment.
+*   **Implementation**: Used in `botsort_scripts/track_rtdetrv4.py`.
+*   **Custom Configuration**: 
+    *   We utilize a **custom configuration chain** (`configs/rtv4/rtv4_x_custom.yml` -> `configs/dfine/dfine_x_custom.yml` -> `configs/dataset/custom_detection.yml`) to support our 27-class dataset on the **X-Large (X)** model variant. 
+    *   **Crucially**, distillation and teacher model parameters are **disabled** for inference to prevent errors when lacking the teacher model weights.
 
 ### B. Multi-Object Tracking (MOT) Algorithms
 
@@ -70,18 +76,20 @@ The goal of this project is to implement robust **Multi-Object Tracking (MOT)** 
 
 #### 1. `track_rtdetrv4.py` (RT-DETR + BoT-SORT)
 *   **Workflow**:
-    1.  **Setup**: Loads the RT-DETR model configuration (`rtv4_hgnetv2_l_coco.yml`) and weights. Initializes the `BoT-SORT` tracker with specific parameters (ReID enabled, thresholds).
+    1.  **Setup**: Loads the RT-DETR model configuration (`configs/rtv4/rtv4_x_custom.yml`) and weights (`weights/best_stg2.pth` or `best_stg1.pth`). Initializes the `BoT-SORT` tracker with specific parameters (ReID enabled, thresholds).
     2.  **Preprocessing**: Reads video frames, resizes them to 640x640, and converts them to tensors.
     3.  **Inference**: Passes the tensor to the RT-DETR model to get raw detections (boxes, scores, labels).
     4.  **Formatting**: The raw output is converted to the format expected by BoT-SORT: `[x1, y1, x2, y2, score, class_id]`.
-    5.  **Tracking Update**: `tracker.update(detections, frame)` is called. The tracker matches new detections to existing tracks using ReID features and motion prediction.
-    6.  **Visualization**: We iterate through `online_targets` (active tracks), drawing bounding boxes and ID labels on the frame.
+    5.  **Class Mapping**: Detections are mapped to our **Custom 27-Class List** (e.g., `tank`, `soldier`, `military_truck`...) instead of standard COCO classes.
+    6.  **Tracking Update**: `tracker.update(detections, frame)` is called. The tracker matches new detections to existing tracks using ReID features and motion prediction.
+    7.  **Visualization**: We iterate through `online_targets` (active tracks), drawing bounding boxes and ID labels on the frame.
 
 #### 2. `track_yolov11.py` (YOLOv11 + BoT-SORT)
 *   **Workflow**:
-    1.  **Setup**: Loads `yolo11m.pt` using the `ultralytics` library. Initializes `BoT-SORT` similarly to the RT-DETR script.
+    1.  **Setup**: Loads `weights/yolov11_best.pt` using the `ultralytics` library. Initializes `BoT-SORT` similarly to the RT-DETR script.
     2.  **Inference**: Uses `yolo(frame)` to get detections.
-    3.  **Integration**: Unlike the "Live" scripts which use the internal tracker, this script *manually* extracts boxes/scores from YOLO results and feeds them into the standalone `BoT-SORT` instance. This allows for finer control over the tracking parameters defined in the `Opt` class.
+    3.  **Class Mapping**: Uses `CUSTOM_CLASSES` list (27 classes) for proper label display.
+    4.  **Integration**: Unlike the "Live" scripts which use the internal tracker, this script *manually* extracts boxes/scores from YOLO results and feeds them into the standalone `BoT-SORT` instance. This allows for finer control over the tracking parameters defined in the `Opt` class.
 
 ### B. Live Tracking Demos (`ultralytics_tracking/`)
 
@@ -212,3 +220,22 @@ python xai/eigen_cam/eigen_cam_rtdetr.py
 # Optional: View available layers
 python xai/eigen_cam/eigen_cam_rtdetr.py --show-layers
 ```
+
+---
+
+## 5. Repository Modifications & Customizations
+
+### A. RT-DETRv4 Adaptations
+To support our custom 27-class Military/Vehicle dataset on the RT-DETRv4-X model without requiring the original teacher model during inference, we implemented a custom configuration hierarchy:
+
+1.  **`configs/dataset/custom_detection.yml`**: Defines the dataset properties, specifically `num_classes: 27` and disabling COCO mapping.
+2.  **`configs/dfine/dfine_x_custom.yml`**: Inherits the custom dataset and defines the `HGNetv2` backbone properties for the X-model.
+3.  **`configs/rtv4/rtv4_x_custom.yml`**: The top-level inference config. It inherits the `dfine` config but **explicitly disables all distillation and teacher model parameters** (`distill_teacher_dim: 0`, `loss_distill: 0`, `distill_adaptive_params: enabled: False`). This prevents runtime errors when the teacher weights are missing.
+
+We also enhanced `tools/inference/torch_inf.py` to support a custom `--output` directory argument.
+
+### B. BoT-SORT Integration
+We utilize the standalone BoT-SORT repository (as a submodule or integrated code) but have modified the `botsort_scripts/` drivers (`track_yolov11.py`, `track_rtdetrv4.py`) to:
+1.  Accept our specific model paths.
+2.  Map class IDs to our 27-class `CUSTOM_CLASSES` list instead of the standard 80 COCO classes.
+3.  Visualize outputs with these custom labels.
