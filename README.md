@@ -25,7 +25,7 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 
 ```text
 ├── BoT-SORT               # Original BoT-SORT repository with patches and fixes as a submodule/dependency
-├── RT-DETRv4         # RT-DETRv4 source code and utilities
+├── RT-DETRv4              # RT-DETRv4 source code and utilities
 ├── botsort_scripts        # Main entry points for YOLOv11 and RT-DETR tracking
 │   ├── track_yolov11.py   # Tracker using YOLOv11
 │   └── track_rtdetrv4.py  # Tracker using RT-DETRv4
