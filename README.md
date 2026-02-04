@@ -11,7 +11,7 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 ## 🚀 Key Features
 
 -   **State-of-the-Art Tracking**: Integration of [BoT-SORT](https://github.com/NirAharon/BoT-SORT) for robust multi-object tracking.
--   **Modern Detectors**: Support for **YOLOv11** via [Ultralytics](https://github.com/ultralytics/ultralytics) and **RT-DETRv4** via the included custom `RT-DETRv4-main` codebase.
+-   **Modern Detectors**: Support for **YOLOv11** via [Ultralytics](https://github.com/ultralytics/ultralytics) and **RT-DETRv4** via the included custom `RT-DETRv4` codebase.
 -   **Explainable AI (XAI)**:
     -   **LIME (Local Interpretable Model-agnostic Explanations)**: Highlight superpixels most responsible for a specific detection.
     -   **Eigen-CAM**: Visualize class-activation maps to see where the model is looking in the image or video.
