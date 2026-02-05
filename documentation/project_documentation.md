@@ -131,6 +131,15 @@ These scripts differ from `botsort_scripts` by prioritizing simplicity and real-
     *   **YOLO** (`gradcam_yolo.py`): We assume the regression head is differentiable and maximize the class confidence score for the specific detected box.
     *   **RT-DETR** (`gradcam_rtdetr.py`): We identify the specific **Transformer Query** responsible for the detection and propagate gradients from that query's output back to the backbone.
 
+#### 5. Unified Pipeline logic (`full_pipeline.py`)
+*   **Role**: Integrates all components (Tracking, Enhancement, XAI) into a single executable pipeline.
+*   **Workflow**:
+    1.  **Enhancement (Optional)**: Checks frame blurriness. If blurry, applies DeblurGAN. If enabled and frame is small, applies SRGAN.
+    2.  **Tracking**: Runs the selected tracker (RT-DETR or YOLO + BoT-SORT) on the processed frame.
+    3.  **Visualization**: Draws bounding boxes and labels on the display frame.
+    4.  **XAI (Optional)**: If enabled, triggers EigenCAM explanation for *newly* appeared tracks to explain the detection.
+    5.  **Output**: Displays the annotated stream with FPS.
+
 ---
 
 ## 4. How to Run
