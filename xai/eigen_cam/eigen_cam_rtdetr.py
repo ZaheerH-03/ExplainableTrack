@@ -235,8 +235,20 @@ def generate_eigencam_visualization(
     visualization = show_cam_on_image(img_normalized, grayscale_cam, use_rgb=True)
     visualization_bgr = cv2.cvtColor(visualization, cv2.COLOR_RGB2BGR)
     
-    cv2.imwrite(output_path, visualization_bgr)
-    print(f"Visualization saved to {output_path}")
+    # Handle Output Path
+    if output_path is not None:
+        if isinstance(output_path, Path):
+            if output_path.is_dir():
+                 # pipeline passed a directory, do not save here, just return
+                 pass
+            else:
+                 cv2.imwrite(str(output_path), visualization_bgr)
+                 print(f"Visualization saved to {output_path}")
+        elif isinstance(output_path, str):
+             cv2.imwrite(output_path, visualization_bgr)
+             print(f"Visualization saved to {output_path}")
+
+    return visualization_bgr
 
 
 if __name__ == "__main__":
@@ -246,8 +258,8 @@ if __name__ == "__main__":
     RT_DETR_MAIN = PROJECT_ROOT_PATH / "RT-DETRv4"
     CONFIG = RT_DETR_MAIN / "configs/rtv4/rtv4_x_custom.yml"
     
-    IMAGE = "media/input_images_xai/tanks3.jpg"
-    OUTPUT = "media/eigen_cam_outputs/tanks3_rtdetr.jpg"
+    IMAGE = "media/input_images_xai/tankkk.png"
+    OUTPUT = "media/eigen_cam_outputs/test_from_pipeline_rtdetr.jpg"
     
     if not CONFIG.exists():
         print(f"Config not found: {CONFIG}")
