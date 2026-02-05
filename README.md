@@ -71,7 +71,21 @@ cd ..
 
 ## 📈 Usage
 
-### 🔍 Multi-Object Tracking
+### 🚀 Unified Pipeline (Recommended)
+Run the all-in-one pipeline with various flags:
+
+```bash
+# Basic Tracking (RT-DETR)
+python full_pipeline.py --model_type rtdetr --source 0
+
+# With DeblurGAN enabled
+python full_pipeline.py --model_type rtdetr --source 0 --enable_deblur
+
+# With XAI (EigenCAM) enabled
+python full_pipeline.py --model_type rtdetr --source 0 --enable_xai
+```
+
+### 🔍 Multi-Object Tracking (Standalone)
 
 To run the tracker using **YOLOv11**:
 ```bash
@@ -139,8 +153,7 @@ LIME and Eigen-CAM provide intuitive heatmaps, helping researchers identify if m
 
 ---
 
-Will Soon be updated with a RT-DETRv4 repo and also a RTDETRv4 custom repo with required changes needed to run on 
-personal datasets with and without teacher model.
+
 
 ---
 ## 📜 License
