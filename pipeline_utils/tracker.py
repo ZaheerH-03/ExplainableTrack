@@ -84,7 +84,9 @@ class ObjectTracker:
 
     def _init_rtdetr(self, weights, config):
         print(f"Loading RT-DETR: {weights} | Config: {config}")
+        
         cfg = YAMLConfig(str(config), resume=str(weights))
+
         if 'HGNetv2' in cfg.yaml_cfg:
             cfg.yaml_cfg['HGNetv2']['pretrained'] = False
         
@@ -101,10 +103,13 @@ class ObjectTracker:
                 super().__init__()
                 self.model = cfg.model.deploy()
                 self.postprocessor = cfg.postprocessor.deploy()
-            def forward(self, images, orig_target_sizes):
+                
+            def forward(self, images, orig_target_sizes=None):
                 outputs = self.model(images)
-                return self.postprocessor(outputs, orig_target_sizes)
-        
+                if orig_target_sizes is not None:
+                    return self.postprocessor(outputs, orig_target_sizes)
+                return outputs
+                
         self.model = Model(cfg).to(self.device)
         self.model.eval()
 

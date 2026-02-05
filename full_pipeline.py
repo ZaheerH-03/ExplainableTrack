@@ -172,7 +172,8 @@ def main():
                 
                 try:
                     # Use original unprocessed frame for XAI analysis
-                    heatmap = explainer.generate_eigencam(original_frame)
+                    # Pass detections to help correct EigenCAM sign flip
+                    heatmap = explainer.generate_eigencam(original_frame, detections=detections)
                     if heatmap is not None:
                         # Save Full Visualization
                         save_name = xai_out_dir / f"track_{track_id}_class_{class_name}.jpg"

@@ -26,7 +26,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 # RT-DETRv4 Path Setup
-RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4-main"
+RT_DETR_ROOT = PROJECT_ROOT / "RT-DETRv4"
 if not RT_DETR_ROOT.exists():
     print(f"Error: Could not find RT-DETRv4-main at {RT_DETR_ROOT}")
     sys.exit(1)
