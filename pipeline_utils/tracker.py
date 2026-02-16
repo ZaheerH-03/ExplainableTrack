@@ -17,8 +17,8 @@ if RT_DETR_ROOT.exists():
     sys.path.append(str(RT_DETR_ROOT))
     try:
         from engine.core import YAMLConfig
-    except ImportError:
-        print("Warning: Could not import RT-DETR engine.")
+    except ImportError as e:
+        print(f"Warning: Could not import RT-DETR engine: {e}")
 
 # BoT-SORT Path Setup
 BOT_SORT_ROOT = PROJECT_ROOT / "BoT-SORT"
@@ -26,14 +26,14 @@ if BOT_SORT_ROOT.exists():
     sys.path.append(str(BOT_SORT_ROOT))
     try:
         from tracker.mc_bot_sort import BoTSORT
-    except ImportError:
-        print("Warning: Could not import BoT-SORT.")
+    except ImportError as e:
+        print(f"Warning: Could not import BoT-SORT: {e}")
 
 # YOLO
 try:
     from ultralytics import YOLO
-except ImportError:
-    print("Warning: Could not import Ultralytics YOLO.")
+except ImportError as e:
+    print(f"Warning: Could not import Ultralytics YOLO: {e}")
 
 
 class Opt:
@@ -68,11 +68,16 @@ class ObjectTracker:
         self.tracker = None
         
         if self.model_type == 'yolo':
+            # Check if YOLO is imported
+            if 'YOLO' not in globals():
+                 raise ImportError("YOLO model requested but ultralytics not imported.")
             self.model = YOLO(weights_path)
             # YOLO has internal tracker
         elif self.model_type == 'rtdetr':
             self._init_rtdetr(weights_path, config_path)
             # Initialize BoT-SORT
+            if 'BoTSORT' not in globals():
+                 raise ImportError("BoTSORT not imported.")
             opt = Opt()
             self.tracker = BoTSORT(opt, frame_rate=30)
             
@@ -83,6 +88,9 @@ class ObjectTracker:
             ])
 
     def _init_rtdetr(self, weights, config):
+        if 'YAMLConfig' not in globals():
+             raise ImportError("RT-DETR engine (YAMLConfig) not imported from RT-DETRv4.")
+
         print(f"Loading RT-DETR: {weights} | Config: {config}")
         
         cfg = YAMLConfig(str(config), resume=str(weights))
