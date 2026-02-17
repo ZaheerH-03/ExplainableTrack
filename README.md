@@ -12,6 +12,9 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 
 -   **State-of-the-Art Tracking**: Integration of [BoT-SORT](https://github.com/NirAharon/BoT-SORT) for robust multi-object tracking.
 -   **Modern Detectors**: Support for **YOLOv11** via [Ultralytics](https://github.com/ultralytics/ultralytics) and **RT-DETRv4** via the included custom `RT-DETRv4` codebase.
+-   **Image Enhancement**:
+    -   [DeblurGAN-v2](https://github.com/KupynOrest/DeblurGAN): Automatic restoration of motion-blurred frames when Laplacian variance is low.
+    -   **SRGAN (Super-Resolution)**: 4x upscaling for low-resolution inputs (< 720p) to improve small object detection.
 -   **Explainable AI (XAI)**:
     -   **LIME (Local Interpretable Model-agnostic Explanations)**: Highlight superpixels most responsible for a specific detection.
     -   **Eigen-CAM**: Visualize class-activation maps to see where the model is looking in the image or video.
@@ -25,6 +28,9 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 
 ```text
 ├── BoT-SORT               # Original BoT-SORT repository with patches and fixes as a submodule/dependency
+├── DeblurGAN              # DeblurGAN-v2 implementation for motion deblurring
+│   ├── models             # GAN architecture definitions
+│   └── test.py            # Deblurring inference script
 ├── RT-DETRv4              # RT-DETRv4 source code and utilities
 ├── botsort_scripts        # Main entry points for YOLOv11 and RT-DETR tracking
 │   ├── track_yolov11.py   # Tracker using YOLOv11
@@ -35,6 +41,9 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 ├── xai                    # Explainable AI tools
 │   ├── lime               # LIME-based detection explanations
 │   └── eigen_cam          # Eigen-CAM visualization scripts for YOLO/RT-DETR
+├── SRGAN                  # Super-Resolution GAN implementation
+│   ├── results            # Output results from SRGAN
+│   └── model.py           # Generator architecture
 ├── media                  # Sample videos, images, and output visualizations
 ├── weights                # Directory for model weights (YOLO, RT-DETR, ReID)
 └── requirements.txt       # Project dependencies
@@ -72,16 +81,20 @@ cd ..
 ## 📈 Usage
 
 ### 🚀 Unified Pipeline (Recommended)
-Run the all-in-one pipeline with various flags:
+The `full_pipeline.py` script integrates detection, tracking, enhancement, and explanation into a single workflow.
 
 ```bash
 # Basic Tracking (RT-DETR)
 python full_pipeline.py --model_type rtdetr --source 0
 
-# With DeblurGAN enabled
-python full_pipeline.py --model_type rtdetr --source 0 --enable_deblur
+# With DeblurGAN enabled (Automatically triggers on blurry frames)
+python full_pipeline.py --model_type rtdetr --source 0 --enable_deblur --deblur_weights weights/generator_deblur.pth
 
-# With XAI (EigenCAM) enabled
+# With SRGAN enabled (Automatically triggers on low-res frames)
+# WARNING: SRGAN is computationally expensive.
+python full_pipeline.py --model_type rtdetr --source 0 --enable_sr
+
+# With XAI (EigenCAM) enabled (Generates heatmaps for new tracks)
 python full_pipeline.py --model_type rtdetr --source 0 --enable_xai
 ```
 
@@ -129,17 +142,31 @@ python xai/eigen_cam/eigen_cam_yolo.py
 Please ensure the following weights are placed in the `weights/` directory:
 -   `yolo11m.pt` (YOLOv11 Medium weights)
 -   `mot17_sbs_S50.pth` (Fast-ReID weights for BoT-SORT)
+-   `generator_sr.pth` (SRGAN Generator weights, if using Super-Resolution)
+-   `generator_deblur.pth` (DeblurGAN-v2 weights, if using Deblurring)
 -   Any custom RT-DETR weights used in scripts.
 
 ---
 
 ## 🧪 Results & Visualizations
 
+## 🧪 Results & Visualizations
+
 ### Tracking Performance
-The system achieves high FPS on modern GPUs, balancing tracking accuracy (MOTA) and speed.
+The system achieves robust tracking (high MOTA) by combining **BoT-SORT**'s motion compensation with high-accuracy detections from **RT-DETRv4** or **YOLOv11**.
+
+### Image Enhancement Results
+The pipeline can recover details from degraded inputs, significantly aiding detection in challenging conditions.
+
+| Degradation | Method | Result |
+| :--- | :--- | :--- |
+| **Motion Blur** | **DeblurGAN-v2** | Restores sharp edges and texture, allowing trackers to maintain ID persistence during fast motion. |
+| **Low Resolution** | **SRGAN (4x)** | Upscales small or distant objects, making them detectable by the standard model anchors. |
 
 ### XAI Insights
-LIME and Eigen-CAM provide intuitive heatmaps, helping researchers identify if models are correctly focusing on object features or "cheating" based on background context.
+**Eigen-CAM** provides intuitive heatmaps, helping researchers verify if the model is focusing on relevant object features (e.g., wheels, turret) rather than background context.
+
+*Example outputs can be found in the `media/` directory.*
 
 ---
 
@@ -150,6 +177,7 @@ LIME and Eigen-CAM provide intuitive heatmaps, helping researchers identify if m
 -   [RT-DETRv4](https://github.com/RT-DETRs/RT-DETRv4) for the transformer-based detection architecture.
 -   [LIME](https://github.com/marcotcr/lime) for the explanation framework.
 -   [pytorch-grad-cam](https://github.com/jacobgil/pytorch-grad-cam) for CAM implementations.
+-   [DeblurGAN](https://github.com/KupynOrest/DeblurGAN) for the deblurring GAN.
 
 ---
 
