@@ -34,3 +34,12 @@ transformers
 ultralytics
 grad-cam
 lime
+requests
+seaborn
+psutil
+ipython
+faiss-gpu
+visdom
+dominate
+tensorrt
+pycuda
