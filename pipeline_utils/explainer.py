@@ -167,12 +167,14 @@ class Explainer:
         
         # 2. Convert to RGB
         img_rgb = cv2.cvtColor(img_resized_bgr, cv2.COLOR_BGR2RGB)
+
+        # 3. Create Normalized Image for Visualization
+        img_normalized = img_rgb.astype(np.float32) / 255.0
         
-        # 3. Create Tensor from RGB (uint8) then float/norm
+        # 4. Create Tensor from RGB (uint8) then float/norm
         input_tensor = torch.from_numpy(img_rgb).permute(2, 0, 1).unsqueeze(0).float() / 255.0
         
-        # 4. Create Normalized Image for Visualization
-        img_normalized = img_rgb.astype(np.float32) / 255.0
+        
         
         # Device
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -221,14 +223,14 @@ class Explainer:
                 mask_fg[y1:y2, x1:x2] = True
                 
             # Compare mean intensities
-            if np.any(mask_fg) and np.any(~mask_fg):
-                mean_fg = np.mean(grayscale_cam[mask_fg])
-                mean_bg = np.mean(grayscale_cam[~mask_fg])
+            # if np.any(mask_fg) and np.any(~mask_fg):
+            #     mean_fg = np.mean(grayscale_cam[mask_fg])
+            #     mean_bg = np.mean(grayscale_cam[~mask_fg])
                 
-                # If background is hotter, the eigenvector is inverted. Flip it.
-                if mean_bg > mean_fg:
-                    # print(f"  [XAI] Canonicalizing sign: BG({mean_bg:.2f}) > FG({mean_fg:.2f}). Inverting.")
-                    grayscale_cam = 1.0 - grayscale_cam
+            #     # If background is hotter, the eigenvector is inverted. Flip it.
+            #     if mean_bg > mean_fg:
+            #         # print(f"  [XAI] Canonicalizing sign: BG({mean_bg:.2f}) > FG({mean_fg:.2f}). Inverting.")
+            #         grayscale_cam = 1.0 - grayscale_cam
 
         # Overlay
         visualization = show_cam_on_image(img_normalized, grayscale_cam, use_rgb=True)
