@@ -10,14 +10,18 @@ A comprehensive repository for state-of-the-art Multi-Object Tracking (MOT) inte
 
 ## 🚀 Key Features
 
--   **State-of-the-Art Tracking**: Integration of [BoT-SORT](https://github.com/NirAharon/BoT-SORT) for robust multi-object tracking.
--   **Modern Detectors**: Support for **YOLOv11** via [Ultralytics](https://github.com/ultralytics/ultralytics) and **RT-DETRv4** via the included custom `RT-DETRv4` codebase.
--   **Image Enhancement**:
-    -   [DeblurGAN-v2](https://github.com/KupynOrest/DeblurGAN): Automatic restoration of motion-blurred frames when Laplacian variance is low.
+-   **Image Enhancement (Restoration)**:
     -   **SRGAN (Super-Resolution)**: 4x upscaling for low-resolution inputs (< 720p) to improve small object detection.
+    -   [DeblurGAN-v2](https://github.com/KupynOrest/DeblurGAN): Automatic restoration of motion-blurred frames when Laplacian variance is low.
+-   **Object Detection**:
+    -   **RT-DETRv4**: Real-time DEtection TRansformer, optimized for accuracy and speed.
+    -   **YOLOv11**: State-of-the-art YOLO model for efficient object detection.
+-   **Multi-Object Tracking (MOT)**:
+    -   **BoT-SORT**: Robust tracking with camera motion compensation.
+    -   **ByteTrack**: High-performance tracking handling low-confidence detections.
 -   **Explainable AI (XAI)**:
-    -   **LIME (Local Interpretable Model-agnostic Explanations)**: Highlight superpixels most responsible for a specific detection.
     -   **Eigen-CAM**: Visualize class-activation maps to see where the model is looking in the image or video.
+    -   **LIME (Local Interpretable Model-agnostic Explanations)**: Highlight superpixels most responsible for a specific detection.
 -   **Re-Identification (ReID)**: High-performance ReID using `fast-reid` models.
 -   **Live & Batch Processing**: Scripts for real-time tracking from webcams and batch processing of video files.
 -   **Custom Military/Vehicle Dataset Support**: Configured for 27 specific classes (e.g., Tank, APC, Soldier) using custom trained models.
@@ -152,16 +156,16 @@ Please ensure the following weights are placed in the `weights/` directory:
 
 ## 🧪 Results & Visualizations
 
-### Tracking Performance
-The system achieves robust tracking (high MOTA) by combining **BoT-SORT**'s motion compensation with high-accuracy detections from **RT-DETRv4** or **YOLOv11**.
-
 ### Image Enhancement Results
 The pipeline can recover details from degraded inputs, significantly aiding detection in challenging conditions.
 
 | Degradation | Method | Result |
 | :--- | :--- | :--- |
-| **Motion Blur** | **DeblurGAN-v2** | Restores sharp edges and texture, allowing trackers to maintain ID persistence during fast motion. |
 | **Low Resolution** | **SRGAN (4x)** | Upscales small or distant objects, making them detectable by the standard model anchors. |
+| **Motion Blur** | **DeblurGAN-v2** | Restores sharp edges and texture, allowing trackers to maintain ID persistence during fast motion. |
+
+### Tracking Performance
+The system achieves robust tracking (high MOTA) by combining **BoT-SORT**'s motion compensation or **ByteTrack** with high-accuracy detections from **RT-DETRv4** or **YOLOv11**.
 
 ### XAI Insights
 **Eigen-CAM** provides intuitive heatmaps, helping researchers verify if the model is focusing on relevant object features (e.g., wheels, turret) rather than background context.
