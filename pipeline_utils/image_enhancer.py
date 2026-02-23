@@ -71,7 +71,7 @@ class ImageEnhancer:
 
     def _load_sr_model(self, weights_path):
         print(f"Loading SRGAN from {weights_path}...")
-        self.sr_model = SRGenerator(img_feat=3, n_feats=64, kernel_size=3, num_res_blocks=16)
+        self.sr_model = SRGenerator(scaling_factor=4, num_of_resblocks=8)
         self.sr_model.load_state_dict(torch.load(weights_path, map_location=self.device))
         self.sr_model.to(self.device)
         self.sr_model.eval()
